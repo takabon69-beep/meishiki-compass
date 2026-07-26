@@ -1193,6 +1193,13 @@ main {
   gap: 12px;
 }
 
+.balance-note {
+  margin: -4px 0 16px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
 .balance-row {
   display: grid;
   grid-template-columns: 32px 1fr 44px;

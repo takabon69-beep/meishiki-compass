@@ -1210,7 +1210,7 @@ function App() {
   const [birthYear, setBirthYear] = useState('2000');
   const [birthMonth, setBirthMonth] = useState('1');
   const [birthDay, setBirthDay] = useState('1');
-  const [birthHour, setBirthHour] = useState('');
+  const [birthHour, setBirthHour] = useState('12');
   const [gender, setGender] = useState<Gender>('male');
   const [activeTab, setActiveTab] = useState<ActiveTab>('profile');
   const [result, setResult] = useState<DiagnosisResult | null>(null);
@@ -1372,7 +1372,7 @@ function App() {
                     value={birthHour}
                     onChange={(e) => setBirthHour(e.target.value)}
                   >
-                    <option value="">不明 / 指定なし</option>
+                    <option value="">不明 / 指定なし（三柱）</option>
                     {Array.from({ length: 24 }).map((_, i) => (
                       <option key={i} value={i}>{String(i).padStart(2, '0')}:00頃</option>
                     ))}
@@ -1508,7 +1508,10 @@ function App() {
                   </article>
                   <article className="wide-card">
                     <span className="eyebrow">ELEMENT BALANCE</span>
-                    <h3>五行バランス</h3>
+                    <h3>五行バランス（簡易スコア）</h3>
+                    <p className="balance-note">
+                      命式内の天干・地支から見た簡易量です。参考サイトの偏差値は蔵干と根の扱いまで含むため、別基準として確認しています。
+                    </p>
                     <div className="balance-list">
                       {Object.entries(result.elementBalance).map(([element, score]) => (
                         <div key={element} className="balance-row">

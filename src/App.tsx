@@ -7,6 +7,7 @@ type Gender = 'male' | 'female';
 
 const accessCodeHash = import.meta.env.VITE_ACCESS_CODE_HASH || '';
 const accessStorageKey = 'meishiki-compass-access';
+const shouldRequireAccessCode = !import.meta.env.DEV;
 
 const relationshipOptions = [
   '職場のメンバー',
@@ -108,6 +109,23 @@ function AccessGate({ onUnlock }: { onUnlock: () => void }) {
               {isChecking ? '確認しています' : '入る'}
             </button>
           </form>
+        </section>
+      </main>
+    </div>
+  );
+}
+
+function AccessSetupRequired() {
+  return (
+    <div className="app-container access-screen">
+      <main className="access-shell">
+        <section className="access-panel">
+          <span className="eyebrow">SETUP REQUIRED</span>
+          <h1>パスコード未設定です</h1>
+          <p>
+            公開用ビルドにアクセス用のSecretが入っていません。
+            GitHubのActions Secretに「VITE_ACCESS_CODE_HASH」を追加してから、Deploy workflowを再実行してください。
+          </p>
         </section>
       </main>
     </div>
@@ -1168,7 +1186,7 @@ function RhythmPanel({ result }: { result: DiagnosisResult }) {
 
 function App() {
   const [isUnlocked, setIsUnlocked] = useState(() => (
-    !accessCodeHash || localStorage.getItem(accessStorageKey) === accessCodeHash
+    !shouldRequireAccessCode || localStorage.getItem(accessStorageKey) === accessCodeHash
   ));
   const [mode, setMode] = useState<AppMode>('self');
   const [targetName, setTargetName] = useState('');
@@ -1193,6 +1211,10 @@ function App() {
   );
   const workGuide = result ? getWorkCareerGuide(result.jobStyle.primaryStar) : null;
   const workEnergyGuide = result ? getWorkEnergyGuide(result.energy.star) : null;
+
+  if (shouldRequireAccessCode && !accessCodeHash) {
+    return <AccessSetupRequired />;
+  }
 
   if (!isUnlocked) {
     return <AccessGate onUnlock={() => setIsUnlocked(true)} />;

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 560" role="img" aria-label="Sea illustration">
+  <rect width="720" height="560" fill="#eaf1f0"/>
+  <circle cx="558" cy="122" r="62" fill="#dfc783" opacity=".42"/>
+  <path d="M95 360c56-34 112-34 168 0s112 34 168 0 112-34 168 0" fill="none" stroke="#4c8da2" stroke-width="28" stroke-linecap="round"/>
+  <path d="M84 424c62-31 124-31 186 0s124 31 186 0 124-31 186 0" fill="none" stroke="#6faabd" stroke-width="24" stroke-linecap="round"/>
+  <path d="M130 296c44-26 88-26 132 0s88 26 132 0 88-26 132 0" fill="none" stroke="#2e7087" stroke-width="22" stroke-linecap="round"/>
+  <path d="M172 472c95 16 186 15 274-2 47-9 88-22 124-39" fill="none" stroke="#c9d3cf" stroke-width="16" stroke-linecap="round" opacity=".6"/>
+</svg>

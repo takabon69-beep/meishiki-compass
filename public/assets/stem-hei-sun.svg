@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 560" role="img" aria-label="Sun illustration">
+  <rect width="720" height="560" fill="#f7ead9"/>
+  <circle cx="360" cy="245" r="118" fill="#f0b64b"/>
+  <circle cx="360" cy="245" r="76" fill="#f7ca69"/>
+  <g stroke="#e28e48" stroke-width="20" stroke-linecap="round">
+    <path d="M360 72v58"/>
+    <path d="M360 360v58"/>
+    <path d="M187 245h58"/>
+    <path d="M475 245h58"/>
+    <path d="M238 123l42 42"/>
+    <path d="M440 325l42 42"/>
+    <path d="M482 123l-42 42"/>
+    <path d="M280 325l-42 42"/>
+  </g>
+  <path d="M150 435c88 28 179 35 273 21 55-8 106-23 153-45" fill="none" stroke="#dfc7a0" stroke-width="20" stroke-linecap="round"/>
+</svg>

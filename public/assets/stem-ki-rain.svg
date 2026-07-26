@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 560" role="img" aria-label="Rain illustration">
+  <rect width="720" height="560" fill="#eef3f0"/>
+  <path d="M227 180c22-54 72-82 129-70 31-47 99-45 132 5 53 5 92 43 92 91 0 54-48 96-110 96H252c-62 0-112-38-112-86 0-39 35-72 87-36z" fill="#b8c9ce"/>
+  <path d="M228 180c38-18 78-14 115 13 31-47 99-45 132 5 36 3 66 22 82 50-19 32-55 54-97 54H252c-62 0-112-38-112-86 0-39 35-72 88-36z" fill="#d3dde0"/>
+  <g stroke="#5f95aa" stroke-width="16" stroke-linecap="round">
+    <path d="M240 350 214 402"/>
+    <path d="M326 344 300 396"/>
+    <path d="M412 350 386 402"/>
+    <path d="M498 344 472 396"/>
+  </g>
+  <path d="M155 445c88 26 180 32 276 18 58-8 107-24 148-45" fill="none" stroke="#ccd0c2" stroke-width="20" stroke-linecap="round"/>
+</svg>

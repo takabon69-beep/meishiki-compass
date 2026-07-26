@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 560" role="img" aria-label="Lamp illustration">
+  <rect width="720" height="560" fill="#f4eadf"/>
+  <ellipse cx="360" cy="255" rx="170" ry="172" fill="#efc96b" opacity=".18"/>
+  <path d="M360 121c50 60 73 103 69 149-4 50-36 88-69 88s-65-38-69-88c-4-46 19-89 69-149z" fill="#e38a45"/>
+  <path d="M360 168c26 41 37 69 34 98-3 30-17 52-34 52s-31-22-34-52c-3-29 8-57 34-98z" fill="#f4c867"/>
+  <rect x="306" y="356" width="108" height="42" rx="14" fill="#6f5845"/>
+  <path d="M282 420h156" stroke="#6f5845" stroke-width="18" stroke-linecap="round"/>
+  <path d="M154 452c91 26 185 30 281 14 52-9 98-23 136-42" fill="none" stroke="#d6c2a4" stroke-width="19" stroke-linecap="round"/>
+  <circle cx="500" cy="154" r="9" fill="#efc96b" opacity=".55"/>
+  <circle cx="226" cy="198" r="7" fill="#efc96b" opacity=".45"/>
+</svg>

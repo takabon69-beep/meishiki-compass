@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 560" role="img" aria-label="Iron illustration">
+  <rect width="720" height="560" fill="#f1eee8"/>
+  <path d="M140 438c92 28 188 34 288 20 61-9 113-25 154-47" fill="none" stroke="#d4c3a7" stroke-width="22" stroke-linecap="round"/>
+  <path d="M367 108 480 250 331 424 232 262z" fill="#8e98a1"/>
+  <path d="M367 108 331 424 480 250z" fill="#aeb8c0"/>
+  <path d="M232 262 331 424 367 108z" fill="#6f7a82"/>
+  <path d="M292 211 367 108 424 180" fill="none" stroke="#dce4e8" stroke-width="12" stroke-linecap="round" opacity=".65"/>
+  <circle cx="513" cy="144" r="9" fill="#dce4e8"/>
+  <circle cx="524" cy="170" r="5" fill="#dce4e8" opacity=".8"/>
+</svg>

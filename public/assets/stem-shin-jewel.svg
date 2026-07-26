@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 560" role="img" aria-label="Jewel illustration">
+  <rect width="720" height="560" fill="#f4eef0"/>
+  <path d="M143 437c93 27 189 33 290 18 58-9 108-24 149-46" fill="none" stroke="#d7c4a6" stroke-width="22" stroke-linecap="round"/>
+  <path d="M271 158h178l78 92-167 177-167-177z" fill="#b9c4cf"/>
+  <path d="M271 158 360 427 193 250z" fill="#8fa0ae"/>
+  <path d="M449 158 360 427 527 250z" fill="#d6dee4"/>
+  <path d="M271 158 327 250h-134z" fill="#eef4f6"/>
+  <path d="M449 158 527 250h-134z" fill="#aebdca"/>
+  <path d="M327 250h66l-33 177z" fill="#f6fbfc"/>
+  <path d="M327 250 360 427 271 158z" fill="#a7b6c2"/>
+  <path d="M393 250 360 427 449 158z" fill="#c7d2da"/>
+  <g stroke="#ffffff" stroke-width="10" stroke-linecap="round" opacity=".75">
+    <path d="M225 138h36"/>
+    <path d="M241 120v36"/>
+    <path d="M510 354h30"/>
+    <path d="M525 339v30"/>
+  </g>
+</svg>

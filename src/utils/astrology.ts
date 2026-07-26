@@ -154,6 +154,7 @@ export interface DiagnosisResult {
     directionLabel: string;
     startAge: number;
     dayCount: number;
+    currentYear: number;
     currentAge: number;
     currentPeriod: {
       order: number;
@@ -1047,6 +1048,7 @@ function buildMajorLuck(
     direction
   );
   const currentAge = getCurrentAge(birthDate, today);
+  const currentYear = today.getFullYear();
   const monthIndex = getSexagenaryNumber(monthStem, monthBranch) - 1;
   const directionStep = direction === 'right' ? 1 : -1;
 
@@ -1058,14 +1060,16 @@ function buildMajorLuck(
     const energyName = getTwelveEnergyStars(dayStem, luckBranch);
     const ageFrom = startAge + index * 10;
     const ageTo = ageFrom + 9;
+    const calendarYearFrom = birthDate.getFullYear() + ageFrom;
+    const calendarYearTo = birthDate.getFullYear() + ageTo;
     const energyValue = toEnergyValue(energyName);
 
     return {
       order: index + 1,
       ageFrom,
       ageTo,
-      calendarYearFrom: birthDate.getFullYear() + ageFrom,
-      calendarYearTo: birthDate.getFullYear() + ageTo,
+      calendarYearFrom,
+      calendarYearTo,
       stem: luckStem,
       branch: luckBranch,
       majorStar,
@@ -1073,7 +1077,7 @@ function buildMajorLuck(
       energyValue,
       theme: getMajorLuckTheme(majorStar, energyValue),
       focus: MAJOR_LUCK_FOCUS[majorStar] || "自分の宿命と社会の接点を確認する10年。",
-      isCurrent: currentAge >= ageFrom && currentAge <= ageTo
+      isCurrent: currentYear >= calendarYearFrom && currentYear <= calendarYearTo
     };
   });
 
@@ -1083,6 +1087,7 @@ function buildMajorLuck(
     directionLabel: direction === 'right' ? '右回り（順回り）' : '左回り（逆回り）',
     startAge,
     dayCount,
+    currentYear,
     currentAge,
     currentPeriod: periods.find((period) => period.isCurrent) || null,
     periods

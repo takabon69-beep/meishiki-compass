@@ -1090,7 +1090,7 @@ function RhythmPanel({ result }: { result: DiagnosisResult }) {
         </div>
         <p className="major-luck-note">
           起運年齢は、資料の考え方に合わせて節入り日までの日数を3で割り、小数点は切り上げて出しています。
-          計算日数：{result.majorLuck.dayCount}日 / 現在年齢：{result.majorLuck.currentAge}歳。
+          計算日数：{result.majorLuck.dayCount}日 / 表示年：{result.majorLuck.currentYear}年 / 満年齢：{result.majorLuck.currentAge}歳。
         </p>
       </section>
 

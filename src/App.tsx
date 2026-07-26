@@ -919,6 +919,7 @@ function RhythmPanel({ result }: { result: DiagnosisResult }) {
     .filter((node) => node.isTenchusatsu || node.energy <= 2)
     .map((node) => `${node.month}月`);
   const currentMajorLuck = result.majorLuck.currentPeriod;
+  const firstMajorLuck = result.majorLuck.periods[0];
   const seasonCards: Array<{
     season: '春' | '夏' | '秋' | '冬';
     years: string;
@@ -1046,7 +1047,7 @@ function RhythmPanel({ result }: { result: DiagnosisResult }) {
           </div>
         </div>
 
-        {currentMajorLuck && (
+        {currentMajorLuck ? (
           <article className="major-luck-current">
             <span>現在の大運</span>
             <strong>
@@ -1058,7 +1059,17 @@ function RhythmPanel({ result }: { result: DiagnosisResult }) {
             </p>
             <p>{currentMajorLuck.theme}</p>
           </article>
-        )}
+        ) : firstMajorLuck ? (
+          <article className="major-luck-current">
+            <span>現在の大運</span>
+            <strong>起運前</strong>
+            <p>
+              {result.majorLuck.currentYear}年は、まだ大運に入る前の時期です。
+              第1旬は{firstMajorLuck.calendarYearFrom}年、{firstMajorLuck.ageFrom}歳から始まります。
+            </p>
+            <p>今は基本の命式や家庭環境の影響を土台として見ます。</p>
+          </article>
+        ) : null}
 
         <div className="major-luck-table-wrap">
           <table className="major-luck-table">

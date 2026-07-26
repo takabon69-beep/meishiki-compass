@@ -1202,9 +1202,9 @@ function App() {
   const [mode, setMode] = useState<AppMode>('self');
   const [targetName, setTargetName] = useState('');
   const [relationship, setRelationship] = useState(relationshipOptions[0]);
-  const [birthYear, setBirthYear] = useState('1990');
-  const [birthMonth, setBirthMonth] = useState('5');
-  const [birthDay, setBirthDay] = useState('15');
+  const [birthYear, setBirthYear] = useState('2000');
+  const [birthMonth, setBirthMonth] = useState('1');
+  const [birthDay, setBirthDay] = useState('1');
   const [birthHour, setBirthHour] = useState('');
   const [gender, setGender] = useState<Gender>('male');
   const [activeTab, setActiveTab] = useState<ActiveTab>('profile');

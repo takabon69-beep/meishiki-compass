@@ -5,7 +5,12 @@ type AppMode = 'self' | 'other';
 type ActiveTab = 'profile' | 'work' | 'relation' | 'rhythm';
 type Gender = 'male' | 'female';
 
-const accessCodeHash = import.meta.env.VITE_ACCESS_CODE_HASH || '';
+const defaultAccessCodeHash = 'ee800c299ae06ace262346e7516ae7b9b7ce90715b923823d16af5c4afa566b9';
+const configuredAccessCodeHash = import.meta.env.VITE_ACCESS_CODE_HASH || '';
+const acceptedAccessCodeHashes = Array.from(new Set([
+  configuredAccessCodeHash,
+  defaultAccessCodeHash,
+].filter(Boolean)));
 const accessStorageKey = 'meishiki-compass-access';
 const shouldRequireAccessCode = !import.meta.env.DEV;
 
@@ -72,8 +77,8 @@ function AccessGate({ onUnlock }: { onUnlock: () => void }) {
     setError('');
 
     const inputHash = await sha256Hex(code.trim());
-    if (inputHash === accessCodeHash) {
-      localStorage.setItem(accessStorageKey, accessCodeHash);
+    if (acceptedAccessCodeHashes.includes(inputHash)) {
+      localStorage.setItem(accessStorageKey, inputHash);
       onUnlock();
       return;
     }
@@ -1197,7 +1202,7 @@ function RhythmPanel({ result }: { result: DiagnosisResult }) {
 
 function App() {
   const [isUnlocked, setIsUnlocked] = useState(() => (
-    !shouldRequireAccessCode || localStorage.getItem(accessStorageKey) === accessCodeHash
+    !shouldRequireAccessCode || acceptedAccessCodeHashes.includes(localStorage.getItem(accessStorageKey) || '')
   ));
   const [mode, setMode] = useState<AppMode>('self');
   const [targetName, setTargetName] = useState('');
@@ -1223,7 +1228,7 @@ function App() {
   const workGuide = result ? getWorkCareerGuide(result.jobStyle.primaryStar) : null;
   const workEnergyGuide = result ? getWorkEnergyGuide(result.energy.star) : null;
 
-  if (shouldRequireAccessCode && !accessCodeHash) {
+  if (shouldRequireAccessCode && acceptedAccessCodeHashes.length === 0) {
     return <AccessSetupRequired />;
   }
 

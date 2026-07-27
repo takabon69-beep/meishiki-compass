@@ -27,3 +27,31 @@ test('matches the suimei.com element balance reference for 2003-03-26 12:00 fema
   });
   assert.equal(Number(result.elementBalanceDifferenceTotal.toFixed(2)), 33.33);
 });
+
+test('keeps the 1970-05-13 rhythm aligned to the 2026 reference year', () => {
+  const result = diagnoseUser(
+    new Date(1970, 4, 13, 12, 0, 0),
+    12,
+    'male',
+    new Date(2026, 6, 28, 12, 0, 0),
+  );
+
+  assert.deepEqual(
+    result.rhythm.map((node) => `${node.year}:${node.stem}${node.branch}`),
+    [
+      '2024:甲辰',
+      '2025:乙巳',
+      '2026:丙午',
+      '2027:丁未',
+      '2028:戊申',
+      '2029:己酉',
+      '2030:庚戌',
+      '2031:辛亥',
+      '2032:壬子',
+      '2033:癸丑',
+      '2034:甲寅',
+      '2035:乙卯',
+    ],
+  );
+  assert.equal(result.monthlyRhythm.find((node) => node.month === 7)?.seasonPhase, '秋3年目「愚者」');
+});

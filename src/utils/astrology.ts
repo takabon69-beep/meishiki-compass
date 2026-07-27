@@ -1071,8 +1071,8 @@ function buildMajorLuck(
   dayStem: string,
   toEnergyStarName: (energyName: string) => string,
   toEnergyValue: (energyName: string) => number,
+  today: Date,
 ): DiagnosisResult["majorLuck"] {
-  const today = new Date();
   const direction = getMajorLuckDirection(gender, yearStem);
   const solarMonthTerms = getSolarMonthTermsAround(birthDate);
   const { dayCount, startAge } = getMajorLuckStartAge(
@@ -1244,7 +1244,7 @@ function getMonthlyLifeSeasons(displayYear: number, today: Date, pattern: number
   const risshunDay = getRisshunDay(today.getFullYear());
   const isBeforeRisshun = getJulianDay(today.getFullYear(), today.getMonth() + 1, today.getDate())
     < getJulianDay(today.getFullYear(), 2, risshunDay);
-  let monthSeasonIndex = currentSeasonIndex - eto + (isBeforeRisshun ? 1 : 0);
+  let monthSeasonIndex = currentSeasonIndex - eto - 1 + (isBeforeRisshun ? 1 : 0);
   if (monthSeasonIndex < 0) monthSeasonIndex += 12;
   if (monthSeasonIndex >= 12) monthSeasonIndex -= 12;
 
@@ -1265,8 +1265,14 @@ function getMonthlyLifeSeasons(displayYear: number, today: Date, pattern: number
  * 生年月日から人間タイプ診断を行う
  * @param birthDate 生年月日
  * @param birthHour 出生時間 (0-23, 不明な場合は undefined)
+ * @param today 年運・月運・大運の基準日
  */
-export function diagnoseUser(birthDate: Date, birthHour?: number, gender: 'male' | 'female' = 'male'): DiagnosisResult {
+export function diagnoseUser(
+  birthDate: Date,
+  birthHour?: number,
+  gender: 'male' | 'female' = 'male',
+  today: Date = new Date(),
+): DiagnosisResult {
   // 高精度天文暦から干支(四柱)を計算
   const almanacResult = dailyAlmanac(birthDate);
   const { pillars } = almanacResult;
@@ -1460,7 +1466,6 @@ export function diagnoseUser(birthDate: Date, birthHour?: number, gender: 'male'
     birthDate.getMonth() + 1,
     birthDate.getDate()
   );
-  const today = new Date();
   const birthLifeSeason = getLifeSeasonForDate(
     birthDate.getFullYear(),
     birthDate.getMonth() + 1,
@@ -1509,7 +1514,8 @@ export function diagnoseUser(birthDate: Date, birthHour?: number, gender: 'male'
     monthBranch,
     dayStem,
     toEnergyStarName,
-    toEnergyValue
+    toEnergyValue,
+    today
   );
 
   // 通変星・十大主星に応じた12年運気バイオリズムのデータ定義（四柱推命・算命学双方のキーに対応）

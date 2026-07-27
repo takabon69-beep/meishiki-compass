@@ -1202,9 +1202,16 @@ main {
 
 .balance-row {
   display: grid;
-  grid-template-columns: 32px 1fr 44px;
+  grid-template-columns: 32px 1fr 64px;
   align-items: center;
   gap: 10px;
+}
+
+.balance-row small {
+  grid-column: 2 / 4;
+  margin-top: -6px;
+  color: var(--muted);
+  font-size: 0.78rem;
 }
 
 .balance-track {
@@ -1218,6 +1225,12 @@ main {
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(90deg, var(--theme-color), var(--accent));
+}
+
+.balance-diff {
+  margin: 14px 0 0;
+  color: var(--text);
+  font-size: 0.92rem;
 }
 
 .relation-grid article:last-child {

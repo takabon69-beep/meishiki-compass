@@ -201,7 +201,9 @@ export interface DiagnosisResult {
       description: string;
     };
   };
-  elementBalance: Record<string, number>; // 五行のバランススコア
+  elementBalance: Record<string, number>; // 五行の偏差値
+  elementBalanceRaw: Record<string, number>; // 五行のraw data
+  elementBalanceDifferenceTotal: number;
   tenchusatsu: {
     name: string;           // 例: "戌亥天中殺"
     branches: string[];     // 例: ["戌", "亥"]
@@ -287,6 +289,25 @@ export const BRANCH_HIDDEN_STEM_PERIODS: Record<string, HiddenStemPeriod[]> = {
   "亥": [{ stem: "甲", untilDay: 12 }, { stem: "壬" }]
 };
 
+const TAIZAN_BRANCH_HIDDEN_STEM_PERIODS: Record<string, HiddenStemPeriod[]> = {
+  "子": [{ stem: "壬", untilDay: 10 }, { stem: "癸" }],
+  "丑": [{ stem: "癸", untilDay: 9 }, { stem: "辛", untilDay: 12 }, { stem: "己" }],
+  "寅": [{ stem: "戊", untilDay: 7 }, { stem: "丙", untilDay: 14 }, { stem: "甲" }],
+  "卯": [{ stem: "甲", untilDay: 10 }, { stem: "乙" }],
+  "辰": [{ stem: "乙", untilDay: 9 }, { stem: "癸", untilDay: 12 }, { stem: "戊" }],
+  "巳": [{ stem: "戊", untilDay: 5 }, { stem: "庚", untilDay: 14 }, { stem: "丙" }],
+  "午": [{ stem: "丙", untilDay: 10 }, { stem: "己", untilDay: 19 }, { stem: "丁" }],
+  "未": [{ stem: "丁", untilDay: 9 }, { stem: "乙", untilDay: 12 }, { stem: "己" }],
+  "申": [{ stem: "戊", untilDay: 10 }, { stem: "壬", untilDay: 13 }, { stem: "庚" }],
+  "酉": [{ stem: "庚", untilDay: 10 }, { stem: "辛" }],
+  "戌": [{ stem: "辛", untilDay: 9 }, { stem: "丁", untilDay: 12 }, { stem: "戊" }],
+  "亥": [{ stem: "戊", untilDay: 7 }, { stem: "甲", untilDay: 12 }, { stem: "壬" }]
+};
+
+const TAIZAN_BRANCH_HIDDEN_STEM_COUNTS = Object.fromEntries(
+  Object.entries(TAIZAN_BRANCH_HIDDEN_STEM_PERIODS).map(([branch, periods]) => [branch, periods.length])
+);
+
 export function getHiddenStemBySolarTermDay(branch: string, solarTermDay: number): string {
   const periods = BRANCH_HIDDEN_STEM_PERIODS[branch];
   if (!periods) return BRANCH_REPRESENTATIVE_STEM[branch] || "甲";
@@ -296,9 +317,22 @@ export function getHiddenStemBySolarTermDay(branch: string, solarTermDay: number
   return match?.stem || periods[periods.length - 1].stem;
 }
 
+function getTaizanHiddenStemBySolarTermDay(branch: string, solarTermDay: number): string {
+  const periods = TAIZAN_BRANCH_HIDDEN_STEM_PERIODS[branch];
+  if (!periods) return getHiddenStemBySolarTermDay(branch, solarTermDay);
+
+  const normalizedDay = Math.max(1, Math.floor(solarTermDay));
+  const match = periods.find((period) => period.untilDay === undefined || normalizedDay <= period.untilDay);
+  return match?.stem || periods[periods.length - 1].stem;
+}
+
 function getAllHiddenStems(branch: string): string[] {
   return (BRANCH_HIDDEN_STEM_PERIODS[branch] || [{ stem: BRANCH_REPRESENTATIVE_STEM[branch] || "甲" }])
     .map((period) => period.stem);
+}
+
+function roundTo2(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
 export function getSexagenaryNumber(stem: string, branch: string): number {
@@ -1255,9 +1289,10 @@ export function diagnoseUser(birthDate: Date, birthHour?: number, gender: 'male'
 
   // 2. 中心星（主星）の取得
   // 算命学の中心星は、日干と月支の「その日の蔵干（二十八元）」から算出する。
-  const currentSolarTerm = almanacResult.solarTerm.current;
+  const solarMonthTerms = getSolarMonthTermsAround(birthDate);
+  const currentSolarTerm = solarMonthTerms.current;
   const solarTermDay = currentSolarTerm
-    ? Math.floor((birthDate.getTime() - new Date(currentSolarTerm.date).getTime()) / 86_400_000) + 1
+    ? Math.max(1, (birthDate.getTime() - currentSolarTerm.date.getTime()) / 86_400_000)
     : null;
   const getBranchHiddenStem = (branch: string) => solarTermDay
     ? getHiddenStemBySolarTermDay(branch, solarTermDay)
@@ -1376,12 +1411,22 @@ export function diagnoseUser(birthDate: Date, birthHour?: number, gender: 'male'
     .map((entry) => entry.star);
 
   // 4. 五行バランスの計算
-  const elementBalance: Record<string, number> = { "木": 0, "火": 0, "土": 0, "金": 0, "水": 0 };
+  const elementBalanceRaw: Record<string, number> = { "木": 0, "火": 0, "土": 0, "金": 0, "水": 0 };
+  const addElementRaw = (element: string | undefined, point: number) => {
+    if (element) elementBalanceRaw[element] += point;
+  };
   const addElement = (stemName: string, branchName: string) => {
     const sElem = TEN_STEMS[stemName]?.element;
     const bElem = TWELVE_BRANCHES[branchName]?.element;
-    if (sElem) elementBalance[sElem] += 2; // 天干は影響力を高め（2点）
-    if (bElem) elementBalance[bElem] += 1.5; // 地支は1.5点
+    const hiddenStem = solarTermDay
+      ? getTaizanHiddenStemBySolarTermDay(branchName, solarTermDay)
+      : BRANCH_REPRESENTATIVE_STEM[branchName] || "甲";
+    const hiddenElem = TEN_STEMS[hiddenStem]?.element;
+    const hiddenCount = TAIZAN_BRANCH_HIDDEN_STEM_COUNTS[branchName] || 2;
+
+    addElementRaw(sElem, 20);
+    addElementRaw(bElem, 20 * (hiddenCount - 1));
+    addElementRaw(hiddenElem, 20);
   };
 
   addElement(dayStem, dayBranch);
@@ -1390,6 +1435,20 @@ export function diagnoseUser(birthDate: Date, birthHour?: number, gender: 'male'
   if (hourStem && hourBranch) {
     addElement(hourStem, hourBranch);
   }
+  const totalElementRaw = Object.values(elementBalanceRaw).reduce((total, score) => total + score, 0);
+  const elementMean = totalElementRaw / 5;
+  const elementBalance = Object.fromEntries(
+    Object.entries(elementBalanceRaw).map(([element, raw]) => [
+      element,
+      elementMean > 0 ? roundTo2(50 + (10 * (raw - elementMean)) / elementMean) : 50
+    ])
+  );
+  const elementBalanceDifferenceTotal = roundTo2(
+    Object.values(elementBalanceRaw).reduce((total, raw) => {
+      const score = elementMean > 0 ? 50 + (10 * (raw - elementMean)) / elementMean : 50;
+      return total + Math.abs(score - 50);
+    }, 0)
+  );
 
   // 5. 天中殺（空亡）の算出
   const tenchusatsuGroup = getTenchusatsuGroup(dayStem, dayBranch);
@@ -1767,6 +1826,8 @@ export function diagnoseUser(birthDate: Date, birthHour?: number, gender: 'male'
       }
     },
     elementBalance,
+    elementBalanceRaw,
+    elementBalanceDifferenceTotal,
     tenchusatsu: {
       name: tenchusatsuData.name,
       branches: tenchusatsuData.branches,

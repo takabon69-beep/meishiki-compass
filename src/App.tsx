@@ -1508,21 +1508,23 @@ function App() {
                   </article>
                   <article className="wide-card">
                     <span className="eyebrow">ELEMENT BALANCE</span>
-                    <h3>五行バランス（簡易スコア）</h3>
+                    <h3>五行バランス（偏差値）</h3>
                     <p className="balance-note">
-                      命式内の天干・地支から見た簡易量です。参考サイトの偏差値は蔵干と根の扱いまで含むため、別基準として確認しています。
+                      命式の天干・地支・採用蔵干からraw dataを出し、50を平均として偏差値化しています。
                     </p>
                     <div className="balance-list">
                       {Object.entries(result.elementBalance).map(([element, score]) => (
                         <div key={element} className="balance-row">
                           <span>{element}</span>
                           <div className="balance-track">
-                            <div style={{ width: `${Math.min(100, (score / 8) * 100)}%` }} />
+                            <div style={{ width: `${Math.min(100, Math.max(0, (score / 80) * 100))}%` }} />
                           </div>
-                          <b>{score.toFixed(1)}</b>
+                          <b>{score.toFixed(2)}</b>
+                          <small>raw {result.elementBalanceRaw[element]}</small>
                         </div>
                       ))}
                     </div>
+                    <p className="balance-diff">差分合計：{result.elementBalanceDifferenceTotal.toFixed(2)}</p>
                   </article>
                 </div>
               )}

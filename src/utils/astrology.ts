@@ -166,6 +166,7 @@ export interface DiagnosisResult {
       branch: string;
       majorStar: string;
       energyStar: string;
+      energyFortune: string;
       energyValue: number;
       theme: string;
     } | null;
@@ -179,6 +180,7 @@ export interface DiagnosisResult {
       branch: string;
       majorStar: string;
       energyStar: string;
+      energyFortune: string;
       energyValue: number;
       theme: string;
       focus: string;
@@ -186,10 +188,28 @@ export interface DiagnosisResult {
     }>;
   };
   seasonCycle: {
+    direction: 'right' | 'left';
+    directionLabel: string;
+    startBranch: string;
+    phases: Array<{
+      season: '春' | '夏' | '秋' | '冬';
+      ageFrom: number;
+      ageTo: number;
+      label: string;
+      instinct: string;
+      branchGroup: string;
+      theme: string;
+      description: string;
+      isCurrent: boolean;
+    }>;
     birth: {
       season: '春' | '夏' | '秋' | '冬';
       seasonYear: 1 | 2 | 3;
       label: string;
+      instinct: string;
+      branchGroup: string;
+      ageFrom: number;
+      ageTo: number;
       theme: string;
       description: string;
     };
@@ -197,6 +217,10 @@ export interface DiagnosisResult {
       season: '春' | '夏' | '秋' | '冬';
       seasonYear: 1 | 2 | 3;
       label: string;
+      instinct: string;
+      branchGroup: string;
+      ageFrom: number;
+      ageTo: number;
       theme: string;
       description: string;
     };
@@ -206,7 +230,29 @@ export interface DiagnosisResult {
   elementBalanceDifferenceTotal: number;
   tenchusatsu: {
     name: string;           // 例: "戌亥天中殺"
+    suimeiName: string;
+    shichuName: string;
     branches: string[];     // 例: ["戌", "亥"]
+    principle: string;
+    missingDirection: string;
+    relationshipTheme: string;
+    openTheme: string;
+    avoidActions: string[];
+    destinyHits: Array<{
+      pillar: 'year' | 'month' | 'day';
+      label: string;
+      branch: string;
+      meaning: string;
+    }>;
+    majorLuckHits: Array<{
+      order: number;
+      ageFrom: number;
+      ageTo: number;
+      calendarYearFrom: number;
+      calendarYearTo: number;
+      stem: string;
+      branch: string;
+    }>;
     description: string;    // 天中殺の特性・気質説明
     advice: string;         // 天中殺期間の過ごし方アドバイス
     caution: string;        // 天中殺に気をつけること
@@ -762,6 +808,50 @@ const TENCHUSATSU_DATA: Record<number, {
   }
 };
 
+const TENCHUSATSU_GUIDES: Record<number, {
+  missingDirection: string;
+  relationshipTheme: string;
+  openTheme: string;
+  avoidActions: string[];
+}> = {
+  0: {
+    missingDirection: "戌・亥。精神面の変化が起きやすいグループ",
+    relationshipTheme: "人生の分岐点で内面が大きく変わりやすく、物質的な安定より精神的な納得を求めやすい傾向があります。",
+    openTheme: "自己確立・独立",
+    avoidActions: ["理念のない拡大", "損得だけで決める契約", "世俗的な評価への執着"],
+  },
+  1: {
+    missingDirection: "申・酉。定まりにくさと対人変化が出やすいグループ",
+    relationshipTheme: "人とのつながりを通して運が動きます。評価や形にこだわりすぎるより、思いやりと柔軟さを持つほど安定します。",
+    openTheme: "人とのつながり・思いやり",
+    avoidActions: ["見栄で進める交渉", "新しい関係への過剰な期待", "独断での契約"],
+  },
+  2: {
+    missingDirection: "南（午・未）。子ども・目下・部下との縁を整えるグループ",
+    relationshipTheme: "目下や後進との関係に学びが出やすい一方、父・目上・上司との縁から支えを得やすい傾向があります。",
+    openTheme: "自己成長・心の安定",
+    avoidActions: ["感情任せの決断", "結婚・離婚など関係の大転換", "勢いだけの投資"],
+  },
+  3: {
+    missingDirection: "辰・巳。現実との調和に揺れが出やすいグループ",
+    relationshipTheme: "純粋さと行動力が強く、興味を持ったことへすぐ向かえます。だからこそ、天中殺期は足元の確認が大切です。",
+    openTheme: "精神的な成長・知識を深めること",
+    avoidActions: ["無謀な新規参入", "準備不足の転職・独立", "重要な約束の即断"],
+  },
+  4: {
+    missingDirection: "東（寅・卯）。人間関係や横の広がりに変化が出やすいグループ",
+    relationshipTheme: "挑戦心と責任感が強く、人当たりも良いタイプです。自由と独立を守りながら、関係の入れ替わりを恐れないことが鍵です。",
+    openTheme: "自由・独立",
+    avoidActions: ["急な環境変化", "派手な投資", "勢い任せの引っ越し・転職"],
+  },
+  5: {
+    missingDirection: "北（子・丑）。目上・父・上司との縁を整えるグループ",
+    relationshipTheme: "目上との縁は薄くなりやすい一方、年下・部下・困っている人との縁が深まりやすい傾向があります。",
+    openTheme: "人を育てること・徳を積むこと",
+    avoidActions: ["長期の海外移住・留学", "大きな買い物や借金", "思い込みで進める決断"],
+  },
+};
+
 const TENCHUSATSU_WAVE_ENERGY: Record<number, Record<string, number>> = {
   // 写真資料「天中殺の波動（幸運と衰運のサイクル）」の他力運グラフ。
   // キーは天中殺グループ番号、値はその年・月の十二支ごとのエネルギー（0〜12）。
@@ -803,6 +893,52 @@ type LifeSeasonDetail = {
   archetype: string;
   theme: string;
   description: string;
+};
+
+type SeasonCyclePhase = {
+  season: LifeSeasonName;
+  ageFrom: number;
+  ageTo: number;
+  label: string;
+  instinct: string;
+  branchGroup: string;
+  theme: string;
+  description: string;
+  isCurrent: boolean;
+};
+
+const SEASON_ORDER: LifeSeasonName[] = ['春', '夏', '秋', '冬'];
+
+const SEASON_CYCLE_DETAILS: Record<LifeSeasonName, {
+  instinct: string;
+  branchGroup: string;
+  theme: string;
+  description: string;
+}> = {
+  春: {
+    instinct: '守備本能',
+    branchGroup: '寅・卯・辰',
+    theme: '守りを固め、育つ土台を作る季節',
+    description: '自分の軸、居場所、信頼関係を育てる時期です。広げる前に、何を守り、どこに根を張るかを整えるほど力が出ます。',
+  },
+  夏: {
+    instinct: '伝達本能',
+    branchGroup: '巳・午・未',
+    theme: '表現し、外へ伝える季節',
+    description: '自分の考えや魅力を外に出す時期です。発信、表現、教育、場づくりなど、人に伝える動きが人生を進めます。',
+  },
+  秋: {
+    instinct: '攻撃本能',
+    branchGroup: '申・酉・戌',
+    theme: '行動し、獲得し、成果を取りに行く季節',
+    description: '社会の中で結果を取りに行く時期です。役割、評価、売上、実績など、現実的な成果に向けて動くほど流れが強まります。',
+  },
+  冬: {
+    instinct: '習得本能',
+    branchGroup: '亥・子・丑',
+    theme: '学び、蓄え、次に備える季節',
+    description: '知識や経験を内側に蓄える時期です。焦って表に出るより、学び直し、研究、準備、整理に力を使うと次の展開が育ちます。',
+  },
 };
 
 const LIFE_SEASON_DETAILS: LifeSeasonDetail[] = [
@@ -958,6 +1094,53 @@ export function getTenchusatsuGroup(stem: string, branch: string): number {
   return Math.floor(index60 / 10);
 }
 
+function buildDestinyTenchusatsuHits(
+  yearBranch: string,
+  monthBranch: string,
+  dayBranch: string,
+  tenchusatsuBranches: string[],
+): DiagnosisResult["tenchusatsu"]["destinyHits"] {
+  const targets = [
+    {
+      pillar: 'year' as const,
+      label: '生年天中殺',
+      branch: yearBranch,
+      meaning: '家系、親、目上、社会との関係に独自性が出やすい配置です。一般的な家族観や肩書きに収まりきらない生き方になりやすくなります。',
+    },
+    {
+      pillar: 'month' as const,
+      label: '生月天中殺',
+      branch: monthBranch,
+      meaning: '仕事、社会、対等な人間関係の中で、常識から少し外れた道を選びやすい配置です。普通に合わせるより、自分の型を作るほど力が出ます。',
+    },
+    {
+      pillar: 'day' as const,
+      label: '生日天中殺',
+      branch: dayBranch,
+      meaning: '自分自身や配偶者との関係に、理解されにくさや独自の価値観が出やすい配置です。自分の感覚を否定しすぎないことが大切です。',
+    },
+  ];
+
+  return targets.filter((item) => tenchusatsuBranches.includes(item.branch));
+}
+
+function buildMajorLuckTenchusatsuHits(
+  periods: DiagnosisResult["majorLuck"]["periods"],
+  tenchusatsuBranches: string[],
+): DiagnosisResult["tenchusatsu"]["majorLuckHits"] {
+  return periods
+    .filter((period) => tenchusatsuBranches.includes(period.branch))
+    .map(({ order, ageFrom, ageTo, calendarYearFrom, calendarYearTo, stem, branch }) => ({
+      order,
+      ageFrom,
+      ageTo,
+      calendarYearFrom,
+      calendarYearTo,
+      stem,
+      branch,
+    }));
+}
+
 export function getTenStars(myStem: string, targetStem: string): { shinsui: string; sanmei: string } {
   const me = TEN_STEMS[myStem];
   const target = TEN_STEMS[targetStem];
@@ -1022,6 +1205,78 @@ function getMajorLuckDirection(gender: 'male' | 'female', yearStem: string): 'ri
   const isYearStemYang = TEN_STEMS[yearStem]?.yinYang === "陽";
   if (gender === 'male') return isYearStemYang ? 'right' : 'left';
   return isYearStemYang ? 'left' : 'right';
+}
+
+function getSeasonFromBranch(branch: string): LifeSeasonName {
+  if (['寅', '卯', '辰'].includes(branch)) return '春';
+  if (['巳', '午', '未'].includes(branch)) return '夏';
+  if (['申', '酉', '戌'].includes(branch)) return '秋';
+  return '冬';
+}
+
+function getSeasonCycleDirectionLabel(direction: 'right' | 'left') {
+  return direction === 'right' ? '順行（右回り）' : '逆行（左回り）';
+}
+
+function buildSeasonCycle(
+  monthBranch: string,
+  direction: 'right' | 'left',
+  currentAge: number,
+): DiagnosisResult["seasonCycle"] {
+  const startSeason = getSeasonFromBranch(monthBranch);
+  const startIndex = SEASON_ORDER.indexOf(startSeason);
+  const directionStep = direction === 'right' ? 1 : -1;
+  const boundedCurrentAge = Math.min(119, Math.max(0, currentAge));
+  const currentPhaseIndex = Math.min(3, Math.floor(boundedCurrentAge / 30));
+  const phases: SeasonCyclePhase[] = Array.from({ length: 4 }, (_, index) => {
+    const season = SEASON_ORDER[(startIndex + directionStep * index + SEASON_ORDER.length) % SEASON_ORDER.length];
+    const detail = SEASON_CYCLE_DETAILS[season];
+    const ageFrom = index * 30;
+    const ageTo = ageFrom + 29;
+
+    return {
+      season,
+      ageFrom,
+      ageTo,
+      label: `${season} ${ageFrom}〜${ageTo}歳`,
+      instinct: detail.instinct,
+      branchGroup: detail.branchGroup,
+      theme: detail.theme,
+      description: detail.description,
+      isCurrent: index === currentPhaseIndex,
+    };
+  });
+  const birth = phases[0];
+  const current = phases[currentPhaseIndex] || birth;
+
+  return {
+    direction,
+    directionLabel: getSeasonCycleDirectionLabel(direction),
+    startBranch: monthBranch,
+    phases,
+    birth: {
+      season: birth.season,
+      seasonYear: 1,
+      label: birth.label,
+      instinct: birth.instinct,
+      branchGroup: birth.branchGroup,
+      ageFrom: birth.ageFrom,
+      ageTo: birth.ageTo,
+      theme: birth.theme,
+      description: birth.description,
+    },
+    current: {
+      season: current.season,
+      seasonYear: Math.min(3, Math.max(1, Math.floor((boundedCurrentAge - current.ageFrom) / 10) + 1)) as 1 | 2 | 3,
+      label: current.label,
+      instinct: current.instinct,
+      branchGroup: current.branchGroup,
+      ageFrom: current.ageFrom,
+      ageTo: current.ageTo,
+      theme: current.theme,
+      description: current.description,
+    },
+  };
 }
 
 function getMajorLuckStartAge(
@@ -1108,6 +1363,7 @@ function buildMajorLuck(
       branch: luckBranch,
       majorStar,
       energyStar: toEnergyStarName(energyName),
+      energyFortune: energyName,
       energyValue,
       theme: getMajorLuckTheme(majorStar, energyValue),
       focus: MAJOR_LUCK_FOCUS[majorStar] || "自分の宿命と社会の接点を確認する10年。",
@@ -1118,7 +1374,7 @@ function buildMajorLuck(
   return {
     gender,
     direction,
-    directionLabel: direction === 'right' ? '右回り（順回り）' : '左回り（逆回り）',
+    directionLabel: getSeasonCycleDirectionLabel(direction),
     startAge,
     dayCount,
     currentYear,
@@ -1459,6 +1715,7 @@ export function diagnoseUser(
   // 5. 天中殺（空亡）の算出
   const tenchusatsuGroup = getTenchusatsuGroup(dayStem, dayBranch);
   const tenchusatsuData = TENCHUSATSU_DATA[tenchusatsuGroup];
+  const tenchusatsuGuide = TENCHUSATSU_GUIDES[tenchusatsuGroup];
   const tenchusatsuBranches = tenchusatsuData.branches;
   const tenchusatsuWave = TENCHUSATSU_WAVE_ENERGY[tenchusatsuGroup] || TENCHUSATSU_WAVE_ENERGY[0];
   const seasonPattern = getSeasonPattern(
@@ -1466,18 +1723,8 @@ export function diagnoseUser(
     birthDate.getMonth() + 1,
     birthDate.getDate()
   );
-  const birthLifeSeason = getLifeSeasonForDate(
-    birthDate.getFullYear(),
-    birthDate.getMonth() + 1,
-    birthDate.getDate(),
-    seasonPattern
-  );
-  const currentLifeSeason = getLifeSeasonForDate(
-    today.getFullYear(),
-    today.getMonth() + 1,
-    today.getDate(),
-    seasonPattern
-  );
+  const majorLuckDirection = getMajorLuckDirection(gender, yearStem);
+  const seasonCycle = buildSeasonCycle(monthBranch, majorLuckDirection, getCurrentAge(birthDate, today));
 
   // 6. 12年間の運気サイクル（バイオリズム）を計算
   // 因果関係を見やすくするため、過去2年 + 今年を含む今後10年で表示する。
@@ -1516,6 +1763,16 @@ export function diagnoseUser(
     toEnergyStarName,
     toEnergyValue,
     today
+  );
+  const destinyTenchusatsuHits = buildDestinyTenchusatsuHits(
+    yearBranch,
+    monthBranch,
+    dayBranch,
+    tenchusatsuBranches
+  );
+  const majorLuckTenchusatsuHits = buildMajorLuckTenchusatsuHits(
+    majorLuck.periods,
+    tenchusatsuBranches
   );
 
   // 通変星・十大主星に応じた12年運気バイオリズムのデータ定義（四柱推命・算命学双方のキーに対応）
@@ -1815,28 +2072,22 @@ export function diagnoseUser(
     rhythm,
     monthlyRhythm,
     majorLuck,
-    seasonCycle: {
-      birth: {
-        season: birthLifeSeason.season,
-        seasonYear: birthLifeSeason.seasonYear,
-        label: birthLifeSeason.label,
-        theme: birthLifeSeason.theme,
-        description: birthLifeSeason.description
-      },
-      current: {
-        season: currentLifeSeason.season,
-        seasonYear: currentLifeSeason.seasonYear,
-        label: currentLifeSeason.label,
-        theme: currentLifeSeason.theme,
-        description: currentLifeSeason.description
-      }
-    },
+    seasonCycle,
     elementBalance,
     elementBalanceRaw,
     elementBalanceDifferenceTotal,
     tenchusatsu: {
       name: tenchusatsuData.name,
+      suimeiName: "天中殺",
+      shichuName: "空亡",
       branches: tenchusatsuData.branches,
+      principle: "日柱の六十干支を基準に、十干に組み合わず余る2つの十二支を見ます。算命学では天中殺、四柱推命では空亡と呼びます。",
+      missingDirection: tenchusatsuGuide.missingDirection,
+      relationshipTheme: tenchusatsuGuide.relationshipTheme,
+      openTheme: tenchusatsuGuide.openTheme,
+      avoidActions: tenchusatsuGuide.avoidActions,
+      destinyHits: destinyTenchusatsuHits,
+      majorLuckHits: majorLuckTenchusatsuHits,
       description: tenchusatsuData.description,
       advice: tenchusatsuData.advice,
       caution: tenchusatsuData.caution

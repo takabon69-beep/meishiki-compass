@@ -54,4 +54,11 @@ test('keeps the 1970-05-13 rhythm aligned to the 2026 reference year', () => {
     ],
   );
   assert.equal(result.monthlyRhythm.find((node) => node.month === 7)?.seasonPhase, '秋3年目「愚者」');
+  assert.equal(result.seasonCycle.startBranch, '巳');
+  assert.equal(result.seasonCycle.directionLabel, '順行（右回り）');
+  assert.equal(result.seasonCycle.birth.season, '夏');
+  assert.equal(result.seasonCycle.current.season, '秋');
+  assert.equal(result.seasonCycle.current.instinct, '攻撃本能');
+  assert.equal(result.seasonCycle.current.ageFrom, 30);
+  assert.equal(result.seasonCycle.current.ageTo, 59);
 });

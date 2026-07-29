@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { diagnoseUser, type DiagnosisResult } from './utils/astrology';
 
-type AppMode = 'self' | 'other';
 type ActiveTab = 'profile' | 'work' | 'relation' | 'rhythm';
 type Gender = 'male' | 'female';
 
@@ -13,14 +12,6 @@ const acceptedAccessCodeHashes = Array.from(new Set([
 ].filter(Boolean)));
 const accessStorageKey = 'meishiki-compass-access';
 const shouldRequireAccessCode = !import.meta.env.DEV;
-
-const relationshipOptions = [
-  '職場のメンバー',
-  '部下・後輩',
-  '上司・先輩',
-  '同僚・パートナー',
-  '家族・身近な人',
-];
 
 function getThemeClass(element: string) {
   switch (element) {
@@ -59,11 +50,6 @@ async function sha256Hex(value: string) {
   return Array.from(new Uint8Array(hashBuffer))
     .map((byte) => byte.toString(16).padStart(2, '0'))
     .join('');
-}
-
-function getPrimaryLabel(mode: AppMode, targetName: string) {
-  if (mode === 'self') return 'あなた';
-  return targetName.trim() || '相手';
 }
 
 function AccessGate({ onUnlock }: { onUnlock: () => void }) {
@@ -149,22 +135,150 @@ function clampDay(year: string, month: string, day: string) {
   return String(Math.min(Number(day), getDaysInMonth(year, month)));
 }
 
+type EnergyStarCorrespondence = {
+  fortuneName: string;
+  sanmeiName: string;
+  order: number;
+  energyValue: number;
+  lifeStage: string;
+  keywords: string;
+  profileMeaning: string;
+};
+
+const energyStarCorrespondences: Record<string, EnergyStarCorrespondence> = {
+  胎: {
+    fortuneName: '胎',
+    sanmeiName: '天報星',
+    order: 1,
+    energyValue: 3,
+    lifeStage: '母胎に宿る・可能性の芽生え',
+    keywords: '感覚的・空想力・準備段階・多芸多才',
+    profileMeaning: 'まだ形になる前の可能性を多く持つ星です。ひとつに決め切る前の感覚や空想から動き始めるため、変化を試しながら芽を見つけると力が出ます。',
+  },
+  養: {
+    fortuneName: '養',
+    sanmeiName: '天印星',
+    order: 2,
+    energyValue: 6,
+    lifeStage: '胎内で育まれる・守られる',
+    keywords: '無邪気・養子気質・こだわらない・自然体',
+    profileMeaning: '守られながら育つような、自然体で人を和ませる星です。周りの力を借りることに抵抗を持ちすぎないほど、愛嬌や柔らかさが役割になります。',
+  },
+  長生: {
+    fortuneName: '長生',
+    sanmeiName: '天貴星',
+    order: 3,
+    energyValue: 9,
+    lifeStage: '誕生・初々しいスタート',
+    keywords: 'プライド・探求心・伝統や古典',
+    profileMeaning: '生まれたばかりの素直な成長力を持つ星です。学ぶ、吸収する、信頼を積み上げる流れに乗ると、まっすぐ伸びていきます。',
+  },
+  沐浴: {
+    fortuneName: '沐浴',
+    sanmeiName: '天恍星',
+    order: 4,
+    energyValue: 7,
+    lifeStage: '産湯を使う・未成熟な魅力',
+    keywords: 'ロマンチスト・芸能向き・華やかさ',
+    profileMeaning: '未成熟さと華やかさが同居する星です。ロマンや憧れに心が動きやすく、表現する場や新しい刺激があるほど魅力が出ます。',
+  },
+  冠帯: {
+    fortuneName: '冠帯',
+    sanmeiName: '天南星',
+    order: 5,
+    energyValue: 10,
+    lifeStage: '元服・青年期の意気込み',
+    keywords: '冒険心・向上心・強い自我・批判力',
+    profileMeaning: '青年期の勢いと、自分の力を試したい気持ちが強い星です。目標がはっきりすると前に出る力が増し、挑戦の場で持ち味が出ます。',
+  },
+  建禄: {
+    fortuneName: '建禄',
+    sanmeiName: '天禄星',
+    order: 6,
+    energyValue: 11,
+    lifeStage: '社会人として自立・実務力',
+    keywords: '堅実・慎重・観察力・論理的思考',
+    profileMeaning: '社会の中で自立し、現実を手堅く動かす星です。観察し、段取りを組み、継続して整える仕事で信頼を積み上げます。',
+  },
+  帝旺: {
+    fortuneName: '帝旺',
+    sanmeiName: '天将星',
+    order: 7,
+    energyValue: 12,
+    lifeStage: '人生の最盛期・強いエネルギー',
+    keywords: '自信家・リーダー気質・創始者タイプ',
+    profileMeaning: '十二段階の中で最も大きなエネルギーを持つ星です。責任ある立場や大きなテーマを引き受けた時に、統率力と突破力が出やすくなります。',
+  },
+  衰: {
+    fortuneName: '衰',
+    sanmeiName: '天堂星',
+    order: 8,
+    energyValue: 8,
+    lifeStage: '盛りを過ぎ、落ち着き・円熟へ',
+    keywords: '老成・思慮深さ・精神性・悟り',
+    profileMeaning: '勢いで押すより、経験や落ち着きで支える星です。一歩引いた場所から全体を見て、助言や調整で力を発揮します。',
+  },
+  病: {
+    fortuneName: '病',
+    sanmeiName: '天胡星',
+    order: 9,
+    energyValue: 4,
+    lifeStage: '老いによる衰え・内省',
+    keywords: '直感・芸術性・繊細でロマンティック',
+    profileMeaning: '外へ強く押し出すより、内側の感性や直感が働く星です。静かに感じ取り、イメージや言葉や作品として形にすることで力が出ます。',
+  },
+  死: {
+    fortuneName: '死',
+    sanmeiName: '天極星',
+    order: 10,
+    energyValue: 2,
+    lifeStage: '肉体活動の終わり・純粋性',
+    keywords: '一途・技術や芸術への没頭・宗教性',
+    profileMeaning: '余計な欲をそぎ落とし、純粋にひとつのことへ向かう星です。派手さよりも、技術や精神性を深める場で集中力が出ます。',
+  },
+  墓: {
+    fortuneName: '墓',
+    sanmeiName: '天庫星',
+    order: 11,
+    energyValue: 5,
+    lifeStage: '墓に還る・蓄積・探求',
+    keywords: '凝り性・探求・伝統の継承・長男気質',
+    profileMeaning: '集める、蓄える、深く掘ることに強い星です。過去の知恵や資料を整理し、専門性として積み上げるほど価値になります。',
+  },
+  絶: {
+    fortuneName: '絶',
+    sanmeiName: '天馳星',
+    order: 12,
+    energyValue: 1,
+    lifeStage: 'いったん消滅・エネルギーの極限',
+    keywords: '瞬発力・土壇場での爆発力・多忙',
+    profileMeaning: '一定のペースで積み上げるより、瞬間的な反応とひらめきで動く星です。変化や短期集中の場で、土壇場の強さが出ます。',
+  },
+};
+
+function getEnergyStarCorrespondence(star: string) {
+  return energyStarCorrespondences[star] || {
+    fortuneName: star,
+    sanmeiName: star,
+    order: 0,
+    energyValue: 0,
+    lifeStage: '命式上のエネルギー段階',
+    keywords: '行動エネルギー',
+    profileMeaning: 'その人がどんな勢いで動きやすいかを見る星です。',
+  };
+}
+
 function buildInsightCards(
   result: DiagnosisResult,
-  mode: AppMode,
-  targetName: string,
-  relationship: string,
+  targetLabel: string,
 ) {
-  const label = getPrimaryLabel(mode, targetName);
-  const relationPrefix = mode === 'self'
-    ? 'まわりとの関係'
-    : `${relationship}としての関係`;
   const currentYearNode = result.rhythm.find((node) => node.year === new Date().getFullYear()) || result.rhythm[0];
+  const energyGuide = getEnergyStarCorrespondence(result.energy.star);
 
   return [
     {
       eyebrow: 'SELF MANUAL',
-      title: `${label}の取扱説明書`,
+      title: `${targetLabel}の取扱説明書`,
       body: `${result.personality.alias}タイプは、${result.personality.shortDesc}が核にあります。無理に急かすより、納得できる目的と自分らしい進め方があると力を出しやすいタイプです。`,
       items: result.personality.strengths,
     },
@@ -176,10 +290,8 @@ function buildInsightCards(
     },
     {
       eyebrow: 'RELATIONSHIP',
-      title: `${relationPrefix}のヒント`,
-      body: mode === 'self'
-        ? result.communication.howToPeer
-        : result.communication.howToGuide,
+      title: 'まわりとの関係のヒント',
+      body: result.communication.howToPeer,
       items: [
         '先に目的を共有する',
         '合う距離感を尊重する',
@@ -189,9 +301,9 @@ function buildInsightCards(
     {
       eyebrow: 'TEAM ROLE',
       title: 'チームで活きる役割',
-      body: `${result.energy.star}星の行動エネルギーを持つため、${result.energy.description} チームでは、この人が自然に動ける場面を見つけることが大切です。`,
+      body: `${energyGuide.sanmeiName}（十二運：${energyGuide.fortuneName}）の行動エネルギーを持つため、${energyGuide.profileMeaning} チームでは、この人が自然に動ける場面を見つけることが大切です。`,
       items: [
-        `${result.energy.level}の行動量`,
+        `エネルギー値 ${energyGuide.energyValue}`,
         currentYearNode?.theme ?? '今の流れを読む',
         `${result.tenchusatsu.name}のリズム`,
       ],
@@ -205,6 +317,237 @@ function PillarBox({ label, stem, branch }: { label: string; stem: string; branc
       <span className="pillar-label">{label}</span>
       <span className="pillar-value">{stem}{branch}</span>
     </div>
+  );
+}
+
+const stemPillarQualities: Record<string, string> = {
+  甲: 'まっすぐ伸びる意志があり、正しいと思った道を粘り強く進める力',
+  乙: '柔らかく人に合わせながら、自分の根を静かに広げていく力',
+  丙: '明るく場を照らし、物事を前向きに動かしていく力',
+  丁: '小さな違和感や気持ちを受け取り、必要な人をそっと照らす力',
+  戊: 'どっしり構えて人や出来事を受け止め、大きな視点で支える力',
+  己: '現実を整え、人や物事を育てながら形にしていく力',
+  庚: '決断力があり、迷いを断ち切って現実を動かす力',
+  辛: '美意識と精度を大切にし、物事を磨き上げる力',
+  壬: '大きな流れを読み、自由に動きながら可能性を広げる力',
+  癸: '細やかに学び、必要なものを静かに蓄えて育てる力',
+};
+
+const branchPillarQualities: Record<string, string> = {
+  子: '直感と吸収力が働き、まだ見えていない可能性を感じ取る性質',
+  丑: '時間をかけて蓄え、簡単には崩れない土台を作る性質',
+  寅: '新しい方向へ踏み出し、伸びしろを信じて挑戦する性質',
+  卯: '人との調和や柔らかさを大切にし、自然に縁を広げる性質',
+  辰: '変化を受け止めながら、理想を現実へつなげようとする性質',
+  巳: '内側に熱を持ち、集中して物事を深めていく性質',
+  午: '表に出る力が強く、明るさや勢いで場を動かす性質',
+  未: '人を育て、場を和らげながら着実に整えていく性質',
+  申: '観察力と実行力があり、状況に応じて素早く動く性質',
+  酉: '完成度や美しさを求め、無駄を削って整える性質',
+  戌: '誠実さと信念を大切にし、守るべきものに忠実に動く性質',
+  亥: '深い感受性と探究心があり、見えない流れを感じながら進む性質',
+};
+
+function getPillarCombinationMeaning(stem: string, branch: string) {
+  const stemQuality = stemPillarQualities[stem] || '自分らしい力を外へ出していく性質';
+  const branchQuality = branchPillarQualities[branch] || 'その力を支える土台の性質';
+  return `${stemQuality}と、${branchQuality}が重なる組み合わせです。`;
+}
+
+type PillarMeaningCard = {
+  label: string;
+  title: string;
+  body: string;
+  relation: string;
+  face: string;
+  ageRange: string;
+};
+
+function getPillarMeaningCards(result: DiagnosisResult) {
+  const makePillarText = (
+    pillar: { stem: string; branch: string } | undefined,
+    roleText: string,
+    missingText?: string,
+  ) => {
+    if (!pillar) return missingText || '出生時間が不明なため、この柱は参考情報として見ます。';
+
+    return `${getPillarCombinationMeaning(pillar.stem, pillar.branch)}${roleText}`;
+  };
+
+  return [
+    {
+      label: '年柱',
+      title: `${result.pillars.year.stem}${result.pillars.year.branch}の意味`,
+      body: makePillarText(
+        result.pillars.year,
+        'この柱は、目上の人や社会から見られやすい公の顔として出ます。初対面でまといやすい雰囲気、家系から受け取った価値観、肩書きや立場を通して信頼される土台を読みます。',
+      ),
+      relation: '先祖・家系・両親・目上・社会全体',
+      face: '社会や目上から見られる自分。第一印象、公の顔、肩書きに出やすい性質。',
+      ageRange: '幼少期〜20代半ば',
+    },
+    {
+      label: '月柱',
+      title: `${result.pillars.month.stem}${result.pillars.month.branch}の意味`,
+      body: makePillarText(
+        result.pillars.month,
+        'この柱は、職場や友人関係など対等な人との間で出やすい顔として読みます。社会人としての振る舞い、仕事の進め方、横のつながりの中で自然に出る性格がここに表れます。',
+      ),
+      relation: '兄弟姉妹・同僚・友人・仕事関係',
+      face: '対等な関係で出る自分。働き方、社交性、仕事での癖が見えやすい場所。',
+      ageRange: '20代後半〜50代',
+    },
+    {
+      label: '日柱',
+      title: `${result.pillars.day.stem}${result.pillars.day.branch}の意味`,
+      body: makePillarText(
+        result.pillars.day,
+        'この柱は、本人の核になる場所です。外向きに整えた顔ではなく、取り繕わない素の価値観、自分らしい選び方、配偶者や深いパートナーシップで出る姿を読みます。',
+      ),
+      relation: '自分自身・配偶者・深いパートナー',
+      face: '素の自分。価値観、体質、結婚生活や深い関係で出やすい本質。',
+      ageRange: '50代後半〜70代',
+    },
+    {
+      label: '時柱',
+      title: result.pillars.hour ? `${result.pillars.hour.stem}${result.pillars.hour.branch}の意味` : '出生時間不明',
+      body: makePillarText(
+        result.pillars.hour,
+        'この柱は、自分が生み出すもの、育てるものへの関わり方として読みます。子ども、部下、後継者、作品や事業など、未来へ残していくものに向かう姿が表れます。',
+        '出生時間を指定しない場合、時柱は出しません。子ども・部下・後継者との関わりや、晩年に育てるものは、年柱・月柱・日柱を中心に参考として見ます。',
+      ),
+      relation: '子ども・部下・後継者・作品や事業',
+      face: '目下や未来に見せる自分。育て方、任せ方、晩年の可能性が出やすい場所。',
+      ageRange: '70代以降',
+    },
+  ] satisfies PillarMeaningCard[];
+}
+
+function FoundationNotesPanel({
+  result,
+  hasHour,
+  targetLabel,
+}: {
+  result: DiagnosisResult;
+  hasHour: boolean;
+  targetLabel: string;
+}) {
+  const pillarMeaningCards = getPillarMeaningCards(result);
+  const centerStar = result.lifeChart.majorStars.center;
+  const centerGuide = getCenterStarPracticalGuide(centerStar);
+  const energyGuide = getEnergyStarCorrespondence(result.energy.star);
+
+  return (
+    <section className="foundation-panel" aria-label="四柱推命の基礎情報">
+      <div className="foundation-heading">
+        <span className="eyebrow">PROFILE GUIDE</span>
+        <h3>{targetLabel}のプロファイル</h3>
+        <p>
+          四柱は、{targetLabel}を中心にして、人間関係の距離感ごとにどんな顔が出やすいかを見る場所です。
+          年柱は目上や社会、月柱は対等な関係、日柱は素の自分、時柱は目下や未来へ育てるもの。
+          命式は性格を決めつけるものではなく、自分を扱いやすくするための地図です。
+        </p>
+      </div>
+
+      <div className="pillar-meaning-grid">
+        {pillarMeaningCards.map((item) => (
+          <article key={item.label} className={!hasHour && item.label === '時柱' ? 'muted' : ''}>
+            <span>{item.label}</span>
+            <strong>{item.title}</strong>
+            <p>{item.body}</p>
+            <dl className="pillar-context-list">
+              <div>
+                <dt>関係</dt>
+                <dd>{item.relation}</dd>
+              </div>
+              <div>
+                <dt>出方</dt>
+                <dd>{item.face}</dd>
+              </div>
+              <div>
+                <dt>年齢域</dt>
+                <dd>{item.ageRange}</dd>
+              </div>
+            </dl>
+          </article>
+        ))}
+      </div>
+      <p className="pillar-age-note">
+        年齢域は固定的な判定ではなく、読み方の目安です。実際の運の流れは大運や年運と重ねて見ます。
+      </p>
+
+      <div className="foundation-guide-grid">
+        <article>
+          <span>日干の星</span>
+          <strong>{result.personality.stem}・{result.personality.natureSymbol}</strong>
+          <p>
+            {targetLabel}の根っこにある気質です。
+            {result.personality.essence}
+          </p>
+        </article>
+        <article>
+          <span>中心星</span>
+          <strong>{centerStar}（{centerGuide.sourceName}）</strong>
+          <p>
+            {centerGuide.headline}。
+            {centerGuide.essence}
+          </p>
+        </article>
+        <article>
+          <span>十二大従星 / 十二運</span>
+          <strong>{energyGuide.sanmeiName}（{energyGuide.fortuneName}）</strong>
+          <p>
+            {targetLabel}が動く時のエネルギー量と質です。
+            {energyGuide.profileMeaning}
+          </p>
+          <dl className="center-star-correspondence">
+            <div>
+              <dt>四柱推命</dt>
+              <dd>{energyGuide.fortuneName}</dd>
+            </div>
+            <div>
+              <dt>算命学</dt>
+              <dd>{energyGuide.sanmeiName}</dd>
+            </div>
+            <div>
+              <dt>段階</dt>
+              <dd>{energyGuide.order}. {energyGuide.lifeStage}</dd>
+            </div>
+            <div>
+              <dt>キーワード</dt>
+              <dd>{energyGuide.keywords}</dd>
+            </div>
+          </dl>
+        </article>
+        <article>
+          <span>天中殺</span>
+          <strong>{result.tenchusatsu.name}</strong>
+          <p>
+            算命学では{result.tenchusatsu.suimeiName}、四柱推命では{result.tenchusatsu.shichuName}と呼びます。
+            欠ける支は{result.tenchusatsu.branches.join('・')}。
+            {result.tenchusatsu.advice}
+          </p>
+          <dl className="center-star-correspondence">
+            <div>
+              <dt>見る基準</dt>
+              <dd>日柱の六十干支</dd>
+            </div>
+            <div>
+              <dt>テーマ</dt>
+              <dd>{result.tenchusatsu.openTheme}</dd>
+            </div>
+            <div>
+              <dt>欠ける気</dt>
+              <dd>{result.tenchusatsu.missingDirection}</dd>
+            </div>
+            <div>
+              <dt>宿命天中殺</dt>
+              <dd>{result.tenchusatsu.destinyHits.length ? result.tenchusatsu.destinyHits.map((hit) => hit.label).join(' / ') : '命式内の該当なし'}</dd>
+            </div>
+          </dl>
+        </article>
+      </div>
+    </section>
   );
 }
 
@@ -320,6 +663,145 @@ const majorStarMeanings: Record<string, string> = {
   玉堂星: '学問、知性、伝統。知識や教えを受け取り深める星です。',
 };
 
+type CenterStarPracticalGuide = {
+  sourceName: string;
+  fiveElementRelation: string;
+  yinYangRelation: string;
+  keywords: string;
+  headline: string;
+  essence: string;
+  relation: string;
+  money: string;
+  watch: string;
+};
+
+const centerStarPracticalGuides: Record<string, CenterStarPracticalGuide> = {
+  貫索星: {
+    sourceName: '比肩',
+    fiveElementRelation: '比和（同じ五行）',
+    yinYangRelation: '同じ陰陽',
+    keywords: '独立心・自我・マイペース',
+    headline: '妥協せず、自分を貫く頑張り屋',
+    essence: '自分の中にしっかりした軸があり、一度決めたことは簡単に曲げません。独立心が強く、自分のペースを守れるほど力が出ます。',
+    relation: '対等な関係を好みます。干渉されるより、任されるほうが素直に動きやすいタイプです。',
+    money: '自分のこだわりや専門性で稼ぐ形が合います。誰かに依存するより、自分の看板を育てるほうが安定します。',
+    watch: '意地を張りすぎると、必要な助けまで拒みやすくなります。守るものと譲れるものを分けておくと楽です。',
+  },
+  石門星: {
+    sourceName: '劫財',
+    fiveElementRelation: '比和（同じ五行）',
+    yinYangRelation: '異なる陰陽',
+    keywords: '協調・社交・駆け引き',
+    headline: '横並びの関係に強い、人脈づくりの星',
+    essence: '人と人をつなぎ、仲間や集団の力を動かす星です。社交性と協調性があり、受け入れられる場で本領を発揮します。',
+    relation: '上下より横並び。仲間として扱われると力が出ますが、対等に見られないと距離を取りやすくなります。',
+    money: '人脈、紹介、チーム、ネットワークがお金につながります。ひとり勝ちより、場を作ることで回り始めます。',
+    watch: '人に合わせすぎると、自分の本音が見えにくくなります。誰と組むかを選ぶことが大切です。',
+  },
+  鳳閣星: {
+    sourceName: '食神',
+    fiveElementRelation: '我生（自分が生む）',
+    yinYangRelation: '同じ陰陽',
+    keywords: '楽天・表現・食と楽しみ',
+    headline: '楽観的で自然体。ありのままを楽しむ星',
+    essence: '食、健康、楽しみ、表現に縁があります。肩の力が抜けた時ほど魅力が出て、まわりにも安心感を渡します。',
+    relation: '深刻さより、ゆったりした空気が合います。急かされるより、楽しく続けられる環境で伸びます。',
+    money: '食、健康、趣味、表現、日常を豊かにする仕事と相性が良い星です。好きなことが自然に仕事へつながります。',
+    watch: '楽なほうへ流れすぎると、集中力が散りやすくなります。遊びと締切の両方を用意すると安定します。',
+  },
+  調舒星: {
+    sourceName: '傷官',
+    fiveElementRelation: '我生（自分が生む）',
+    yinYangRelation: '異なる陰陽',
+    keywords: '繊細・完璧主義・美意識',
+    headline: '反骨精神と繊細な感性を持つ表現者',
+    essence: '感受性が鋭く、違和感や怒りを言葉や作品に変える力があります。独立独歩で進むほど才能が磨かれます。',
+    relation: '雑に扱われると深く傷つきます。表面的な励ましより、こだわりを丁寧に見てもらえる関係が合います。',
+    money: '文章、美術、音楽、企画、専門技術など、自分の感性を形にする仕事で価値を生みます。',
+    watch: '言葉が鋭くなりやすい星です。正しさを伝える時ほど、相手の受け取り方を一呼吸おくと強みになります。',
+  },
+  禄存星: {
+    sourceName: '偏財',
+    fiveElementRelation: '我剋（自分が剋す）',
+    yinYangRelation: '同じ陰陽',
+    keywords: '奉仕・愛嬌・回転する財',
+    headline: '柔軟に動き、人と財を回す星',
+    essence: '人にもお金にも動きがあります。親切で面倒見がよく、場の流れを見ながら必要なものを回せるタイプです。',
+    relation: '相手に合わせる柔らかさがあります。人のために動く一方で、反応が返ってこないと疲れやすくなります。',
+    money: '商売、営業、紹介、調整、プロデュースなど、動きながら人と価値をつなぐほど財が生まれます。',
+    watch: 'よく見せたい気持ちが強くなると、無理な出費や約束が増えます。自分の器に合う範囲を決めておくと安心です。',
+  },
+  司禄星: {
+    sourceName: '正財',
+    fiveElementRelation: '我剋（自分が剋す）',
+    yinYangRelation: '異なる陰陽',
+    keywords: '堅実・蓄積・コツコツ型',
+    headline: '堅実に積み上げ、テリトリーを守る星',
+    essence: 'コツコツ時間をかけて、生活、家族、文化、信頼を守り育てる星です。派手さより、着実さに強みがあります。',
+    relation: '安心できる小さな世界を大切にします。急な変化より、約束や手順が見える関係で落ち着きます。',
+    money: '貯蓄、管理、継続収入、家業、事務、計画性のある働き方に向きます。長く続けるほど強くなります。',
+    watch: '守りが強すぎると、チャンスにも慎重になりすぎます。小さく試す枠を持つと現実が広がります。',
+  },
+  車騎星: {
+    sourceName: '偏官',
+    fiveElementRelation: '剋我（自分が剋される）',
+    yinYangRelation: '同じ陰陽',
+    keywords: '行動力・瞬発力・突破力',
+    headline: '強い行動力で突破する勝負の星',
+    essence: '先に体が動く、闘争心のある星です。スピード、挑戦、現場感のある場でエネルギーが大きくなります。',
+    relation: '回りくどさより率直さを好みます。目標がはっきりすると、仲間のためにも一気に動けます。',
+    money: '営業、スポーツ、現場仕事、実行責任のある役割など、動きと成果が直結する仕事で力が出ます。',
+    watch: '急ぎすぎると周囲がついてこられません。勝負どころと待つ場面を分けると、突破力がきれいに出ます。',
+  },
+  牽牛星: {
+    sourceName: '正官',
+    fiveElementRelation: '剋我（自分が剋される）',
+    yinYangRelation: '異なる陰陽',
+    keywords: '責任感・秩序・社会的信用',
+    headline: '責任と品位を重んじ、王道を歩く星',
+    essence: '社会的な役割、信用、規律を大切にします。評価されるほど背筋が伸び、任された責任をきちんと果たします。',
+    relation: '礼儀や約束を守る人に安心します。きちんと扱われることで、落ち着きと信頼感が増します。',
+    money: '組織、資格、管理職、公的な仕事、専門職など、信頼や肩書きが価値になる領域に向きます。',
+    watch: '正しさに寄りすぎると、自分にも人にも厳しくなります。規範の中に余白を作ると人がついてきます。',
+  },
+  龍高星: {
+    sourceName: '偏印',
+    fiveElementRelation: '生我（自分を生む）',
+    yinYangRelation: '同じ陰陽',
+    keywords: '探求心・改革・専門性',
+    headline: 'ひらめきと変化で、壊して創る星',
+    essence: '学歴より発想、安定より変化に強い星です。知らない環境に飛び込むほど、経験が知恵に変わります。',
+    relation: '自由度が必要です。縛られるより、動きながら学べる関係や職場で本来の力が出ます。',
+    money: '企画、旅、調査、IT、技術、創作、新規事業など、変化と発想を扱う仕事に向きます。',
+    watch: '飽きやすさが出ると積み上げが途切れます。自由に動ける余白と、続ける最低ラインを両方決めると強いです。',
+  },
+  玉堂星: {
+    sourceName: '印綬',
+    fiveElementRelation: '生我（自分を生む）',
+    yinYangRelation: '異なる陰陽',
+    keywords: '知性・学問・伝統・受容性',
+    headline: '安定した環境で知性を深める星',
+    essence: '学問、研究、伝統、教えることに縁があります。落ち着いた環境でじっくり学ぶほど、内側の優しさも育ちます。',
+    relation: '丁寧な説明や礼儀のある会話を好みます。信頼できる人から学び、また人に渡すことで力が整います。',
+    money: '教育、研究、資料作成、相談業、公務、伝統分野など、知識を蓄えて渡す仕事に向きます。',
+    watch: '考えすぎると動きが遅くなります。学んだことを小さく外に出す習慣が、才能を眠らせないコツです。',
+  },
+};
+
+function getCenterStarPracticalGuide(star: string): CenterStarPracticalGuide {
+  return centerStarPracticalGuides[star] || {
+    sourceName: star,
+    fiveElementRelation: '陰陽五行の関係',
+    yinYangRelation: '陰陽の組み合わせ',
+    keywords: 'その星らしい性質',
+    headline: '中心にある星の使い方を見る',
+    essence: '中心星は、日干と月支の蔵干から出る本人の核です。無意識に使いやすい性質として表れます。',
+    relation: '人との関わり方、安心できる距離感、役割の取り方に出やすい星です。',
+    money: 'お金や仕事では、その星の性質を自然に使える形を選ぶほど続きやすくなります。',
+    watch: '強みが強く出すぎると、同じ性質がつまずきにもなります。',
+  };
+}
+
 const starBehaviorTendencies: Record<string, string> = {
   貫索星:
     '相手に合わせすぎず、自分の考えや距離感を守って接しやすいです。面倒見は静かですが、譲れないところでは頑固さや厳しさが出ます。',
@@ -409,6 +891,7 @@ function LifeChartPanel({ result, targetLabel }: { result: DiagnosisResult; targ
         <h3>{targetLabel}の人体星図</h3>
         <p>
           参考画像の配置に合わせ、①〜⑤は十大主星、A〜Cは十二大従星として表示しています。
+          十二大従星は、四柱推命では十二運と呼ばれ、初年・中年・晩年にどんな勢いで動きやすいかを見る場所です。
           中心の星は、月支の蔵干「{hiddenStems.monthBranch}」から出しています。
         </p>
       </div>
@@ -445,6 +928,60 @@ function LifeChartPanel({ result, targetLabel }: { result: DiagnosisResult; targ
             </dl>
           </article>
         ))}
+      </div>
+    </section>
+  );
+}
+
+function CenterStarPracticalPanel({ result, targetLabel }: { result: DiagnosisResult; targetLabel: string }) {
+  const centerStar = result.lifeChart.majorStars.center;
+  const guide = getCenterStarPracticalGuide(centerStar);
+
+  return (
+    <section className="center-star-panel" aria-label="中心星の実用メモ">
+      <div className="center-star-heading">
+        <span className="eyebrow">CENTER STAR</span>
+        <h3>{targetLabel}の中心星は{centerStar}</h3>
+        <p>
+          算命学では「{centerStar}」、四柱推命では「{guide.sourceName}」として見る星です。
+          呼び名は違いますが、どちらも日干とほかの干の陰陽五行の関係から出します。
+        </p>
+      </div>
+      <div className="center-star-summary">
+        <strong>{guide.headline}</strong>
+        <p>{guide.essence}</p>
+        <dl className="center-star-correspondence">
+          <div>
+            <dt>通変星</dt>
+            <dd>{guide.sourceName}</dd>
+          </div>
+          <div>
+            <dt>五行の関係</dt>
+            <dd>{guide.fiveElementRelation}</dd>
+          </div>
+          <div>
+            <dt>陰陽</dt>
+            <dd>{guide.yinYangRelation}</dd>
+          </div>
+          <div>
+            <dt>キーワード</dt>
+            <dd>{guide.keywords}</dd>
+          </div>
+        </dl>
+      </div>
+      <div className="center-star-grid">
+        <article>
+          <span>人との距離感</span>
+          <p>{guide.relation}</p>
+        </article>
+        <article>
+          <span>仕事・お金</span>
+          <p>{guide.money}</p>
+        </article>
+        <article>
+          <span>気をつけたい癖</span>
+          <p>{guide.watch}</p>
+        </article>
       </div>
     </section>
   );
@@ -487,7 +1024,7 @@ const actionAreaMeanings: Record<string, { title: string; body: string; advice: 
   },
 };
 
-function ActionAreaPanel({ result }: { result: DiagnosisResult }) {
+function ActionAreaPanel({ result, targetLabel }: { result: DiagnosisResult; targetLabel: string }) {
   const { actionArea } = result;
   const polygonPoints = actionArea.points.map((point) => `${point.x},${point.y}`).join(' ');
   const dominantLabel = actionArea.dominantAreas.join(' / ');
@@ -496,10 +1033,10 @@ function ActionAreaPanel({ result }: { result: DiagnosisResult }) {
     <section className="action-area-panel" aria-label="行動エリア">
       <div className="action-area-copy">
         <span className="eyebrow">ACTION AREA</span>
-        <h3>行動エリア</h3>
+        <h3>{targetLabel}の行動エリア</h3>
         <p>
-          年干支・月干支・日干支の60干支No.を円周上に置き、3点を結んだ三角形です。
-          行動範囲の広さと、無意識に満足しやすい動き方を見ます。
+          この三角形は、{targetLabel}が自然に動きやすい範囲を表しています。
+          外へ出て広げると満たされるのか、身近な場所で深めると落ち着くのかを見ます。
         </p>
         <div className="action-score">
           <strong>{actionArea.energyScore}</strong>
@@ -821,7 +1358,7 @@ function getWorkEnergyGuide(star: string) {
   };
 }
 
-function TalentEnergyPanel({ result }: { result: DiagnosisResult }) {
+function TalentEnergyPanel({ result, targetLabel }: { result: DiagnosisResult; targetLabel: string }) {
   const sortedEntries = [...result.talentEnergy.entries].sort((a, b) => b.totalEnergy - a.totalEnergy);
   const topEntries = sortedEntries.slice(0, 3);
   const topNames = result.talentEnergy.dominantStars.join(' / ');
@@ -831,11 +1368,11 @@ function TalentEnergyPanel({ result }: { result: DiagnosisResult }) {
     <section className="talent-energy-panel" aria-label="才能エネルギー">
       <div className="talent-summary">
         <span className="eyebrow">TALENT ENERGY</span>
-        <h3>才能エネルギー</h3>
+        <h3>{targetLabel}の才能エネルギー</h3>
         <p>
-          命式に出ている十干の数と、年支・月支・日支から出る星のエネルギー値を掛け合わせて見ます。
-          基礎値は日支・月支・年支のライフエネルギー値の合計です。
-          いちばんエネルギーが集まっている星が、無意識に使いたくなる才能です。
+          ここでは、{targetLabel}が無意識に使いたくなる才能を見ます。
+          頑張らなくてもつい選んでしまうこと、気づくと力を注いでいること。
+          その方向に役割や仕事を寄せると、自然に力が出やすくなります。
         </p>
         <div className="talent-main">
           <span>{result.talentEnergy.hasStrongTalentStar ? '才能星' : '高エネルギー星'}</span>
@@ -919,51 +1456,78 @@ function RhythmPanel({ result }: { result: DiagnosisResult }) {
   const currentMonth = new Date().getMonth() + 1;
   const currentYearNode = result.rhythm.find((node) => node.year === displayCurrentYear) || result.rhythm[0];
   const currentMonthNode = result.monthlyRhythm.find((node) => node.month === currentMonth) || result.monthlyRhythm[0];
+  const currentYearIsTenchusatsu = currentYearNode.isTenchusatsu;
+  const currentMonthIsTenchusatsu = currentMonthNode.isTenchusatsu;
   const peakYears = result.rhythm.filter((node) => node.waveEnergy >= 10).map((node) => `${node.year}年`);
   const cautionMonths = result.monthlyRhythm
     .filter((node) => node.isTenchusatsu || node.energy <= 2)
     .map((node) => `${node.month}月`);
   const currentMajorLuck = result.majorLuck.currentPeriod;
   const firstMajorLuck = result.majorLuck.periods[0];
-  const seasonCards: Array<{
-    season: '春' | '夏' | '秋' | '冬';
-    years: string;
-    theme: string;
-    task: string;
-  }> = [
-    {
-      season: '冬',
-      years: '1〜3年目',
-      theme: '検証・種まき・基盤づくり',
-      task: '焦って広げず、次の12年で育てたいテーマを絞る。未整理の問題や不安を見える形にする。',
-    },
-    {
-      season: '春',
-      years: '4〜6年目',
-      theme: '芽吹き・育成・方向づけ',
-      task: '小さく動き始め、関係性や学びを育てる。合わなくなったやり方は夏に入る前に手放す。',
-    },
-    {
-      season: '夏',
-      years: '7〜9年目',
-      theme: '挑戦・創造・拡大',
-      task: '勢いを使って外へ出る。広げすぎ、燃え尽き、感情的な判断に注意しながら形にする。',
-    },
-    {
-      season: '秋',
-      years: '10〜12年目',
-      theme: '収穫・評価・次の準備',
-      task: '結果を受け取り、残すものと終えるものを分ける。次の冬へ向けて経験を知恵に変える。',
-    },
-  ];
+  const currentMajorLuckIsTenchusatsu = currentMajorLuck
+    ? result.tenchusatsu.branches.includes(currentMajorLuck.branch)
+    : false;
+  const currentMajorLuckStarGuide = currentMajorLuck
+    ? getCenterStarPracticalGuide(currentMajorLuck.majorStar)
+    : null;
 
   return (
     <div className="rhythm-view">
       <article className="wide-card">
         <span className="eyebrow">TENCHUSATSU</span>
-        <h3>{result.tenchusatsu.name}</h3>
+        <h3>{result.tenchusatsu.name}（{result.tenchusatsu.shichuName}）</h3>
+        <p>{result.tenchusatsu.principle}</p>
         <p>{result.tenchusatsu.description}</p>
+        <div className="tenchusatsu-layer-grid">
+          <article className={currentYearIsTenchusatsu || currentMonthIsTenchusatsu ? 'active' : ''}>
+            <span>運命天中殺</span>
+            <strong>年・月・日・時間で巡る周期</strong>
+            <p>
+              年は12年に2年、月は12ヶ月に2ヶ月巡ります。
+              現在は年運が{currentYearIsTenchusatsu ? '天中殺期間' : '通常期'}、
+              月運が{currentMonthIsTenchusatsu ? '天中殺期間' : '通常期'}です。
+            </p>
+          </article>
+          <article className={result.tenchusatsu.destinyHits.length ? 'active' : ''}>
+            <span>宿命天中殺</span>
+            <strong>{result.tenchusatsu.destinyHits.length ? result.tenchusatsu.destinyHits.map((hit) => hit.label).join(' / ') : '命式内の該当なし'}</strong>
+            <p>
+              {result.tenchusatsu.destinyHits.length
+                ? result.tenchusatsu.destinyHits.map((hit) => `${hit.label}：${hit.meaning}`).join(' ')
+                : '年支・月支・日支には、天中殺の支が入っていません。後天的に巡る年運・月運を中心に見ます。'}
+            </p>
+          </article>
+          <article className={currentMajorLuckIsTenchusatsu ? 'active' : ''}>
+            <span>大運天中殺</span>
+            <strong>{result.tenchusatsu.majorLuckHits.length ? `${result.tenchusatsu.majorLuckHits.length}旬が該当` : '表示中の大運では該当なし'}</strong>
+            <p>
+              {result.tenchusatsu.majorLuckHits.length
+                ? result.tenchusatsu.majorLuckHits.map((hit) => `第${hit.order}旬 ${hit.ageFrom}〜${hit.ageTo}歳（${hit.stem}${hit.branch}）`).join(' / ')
+                : '120年の大運の中で、表示している10旬には天中殺の支が重なっていません。'}
+            </p>
+          </article>
+        </div>
+        <div className="tenchusatsu-usage-grid">
+          <article>
+            <span>欠ける気</span>
+            <p>{result.tenchusatsu.missingDirection}</p>
+          </article>
+          <article>
+            <span>関係テーマ</span>
+            <p>{result.tenchusatsu.relationshipTheme}</p>
+          </article>
+          <article>
+            <span>開運テーマ</span>
+            <p>{result.tenchusatsu.openTheme}</p>
+          </article>
+        </div>
+        <div className="tenchusatsu-chip-list" aria-label="天中殺期間に避けたいこと">
+          {result.tenchusatsu.avoidActions.map((item) => (
+            <span key={item}>{item}</span>
+          ))}
+        </div>
         <p>{result.tenchusatsu.advice}</p>
+        <p>{result.tenchusatsu.caution}</p>
       </article>
 
       <article className="rhythm-summary-card">
@@ -982,48 +1546,59 @@ function RhythmPanel({ result }: { result: DiagnosisResult }) {
 
       <section className="season-cycle-panel" aria-label="春夏秋冬サイクル">
         <div className="season-cycle-current">
-          <span className="eyebrow">SEASON CYCLE</span>
-          <h3>春夏秋冬の現在地</h3>
+          <span className="eyebrow">SEASON MAJOR LUCK</span>
+          <h3>四季運の現在地</h3>
           <p className="season-cycle-lead">
-            12年を冬・春・夏・秋の4つに分けて、今が「準備」「育成」「拡大」「収穫」のどこにいるかを見ます。
-            各季節は3年ずつ進みます。
+            四季運は、月支から始まる人生120年の大きな季節です。
+            大運と同じ{result.seasonCycle.directionLabel}で巡り、春・夏・秋・冬を30年ずつ見ます。
+            年運や月運よりも大きい、人生全体の戦略フェーズとして読みます。
           </p>
           <div className="season-current-grid">
             <article>
-              <span>生まれた季節</span>
+              <span>開始の季節</span>
               <strong>{result.seasonCycle.birth.label}</strong>
-              <p>{result.seasonCycle.birth.description}</p>
+              <p>
+                月支「{result.seasonCycle.startBranch}」は{result.seasonCycle.birth.branchGroup}のグループ。
+                {result.seasonCycle.birth.instinct}から始まります。
+              </p>
             </article>
             <article>
               <span>現在の季節</span>
               <strong>{result.seasonCycle.current.label}</strong>
-              <p>{result.seasonCycle.current.description}</p>
+              <p>
+                {result.seasonCycle.current.instinct}の時期です。
+                {result.seasonCycle.current.description}
+              </p>
             </article>
           </div>
         </div>
         <div className="season-card-grid">
-          {seasonCards.map((card) => (
+          {result.seasonCycle.phases.map((card) => (
             <article
-              key={card.season}
-              className={result.seasonCycle.current.season === card.season ? 'active' : ''}
+              key={`${card.season}-${card.ageFrom}`}
+              className={card.isCurrent ? 'active' : ''}
             >
               <div className="season-card-title">
                 <strong>{card.season}</strong>
-                <span>{card.years}</span>
+                <span>{card.ageFrom}〜{card.ageTo}歳</span>
               </div>
               <dl>
                 <div>
-                  <dt>テーマ</dt>
-                  <dd>{card.theme}</dd>
+                  <dt>本能</dt>
+                  <dd>{card.instinct}</dd>
                 </div>
                 <div>
-                  <dt>課題</dt>
-                  <dd>{card.task}</dd>
+                  <dt>使い方</dt>
+                  <dd>{card.description}</dd>
                 </div>
               </dl>
             </article>
           ))}
         </div>
+        <p className="major-luck-note">
+          四季運は算命学独自の上位レイヤーです。大運の10年単位の読みと重ねて、
+          今の30年でどの本能を使いやすいかを見ます。
+        </p>
       </section>
 
       <section className="major-luck-panel" aria-label="大運">
@@ -1032,8 +1607,9 @@ function RhythmPanel({ result }: { result: DiagnosisResult }) {
             <span className="eyebrow">MAJOR LUCK</span>
             <h3>大運（10年運）</h3>
             <p>
-              生まれた月干支を基点に、10年ごとに回ってくる大きな運の流れです。
-              宿命の性質が社会の中でどう表れやすいかを見ます。
+              大運は、算命学と四柱推命に共通する10年ごとの後天運です。
+              月柱の干支を起点に、性別と年干の陰陽で順行・逆行を決めます。
+              ここでは十大主星と十二大従星を重ねて、10年単位のテーマを見ます。
             </p>
           </div>
           <div className="major-luck-stats">
@@ -1060,8 +1636,14 @@ function RhythmPanel({ result }: { result: DiagnosisResult }) {
             </strong>
             <p>
               {currentMajorLuck.stem}{currentMajorLuck.branch}・{currentMajorLuck.majorStar}・
-              {currentMajorLuck.energyStar}（{currentMajorLuck.energyValue}）
+              {currentMajorLuck.energyStar} / {currentMajorLuck.energyFortune}（{currentMajorLuck.energyValue}）
             </p>
+            {currentMajorLuckStarGuide && (
+              <p className="major-luck-star-note">
+                {currentMajorLuck.majorStar}は「{currentMajorLuckStarGuide.keywords}」の星です。
+                {currentMajorLuckStarGuide.essence}
+              </p>
+            )}
             <p>{currentMajorLuck.theme}</p>
           </article>
         ) : firstMajorLuck ? (
@@ -1085,7 +1667,7 @@ function RhythmPanel({ result }: { result: DiagnosisResult }) {
                 <th>西暦</th>
                 <th>大運干支</th>
                 <th>十大主星</th>
-                <th>十二大従星</th>
+                <th>十二大従星 / 十二運</th>
                 <th>テーマ</th>
               </tr>
             </thead>
@@ -1097,8 +1679,13 @@ function RhythmPanel({ result }: { result: DiagnosisResult }) {
                   <td>{period.calendarYearFrom}〜{period.calendarYearTo}</td>
                   <td><strong>{period.stem}{period.branch}</strong></td>
                   <td>{period.majorStar}</td>
-                  <td>{period.energyStar}（{period.energyValue}）</td>
-                  <td>{period.focus}</td>
+                  <td>{period.energyStar} / {period.energyFortune}（{period.energyValue}）</td>
+                  <td>
+                    <span className="major-luck-table-note">
+                      {period.majorStar}：{getCenterStarPracticalGuide(period.majorStar).keywords}
+                    </span>
+                    {period.focus}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -1204,9 +1791,7 @@ function App() {
   const [isUnlocked, setIsUnlocked] = useState(() => (
     !shouldRequireAccessCode || acceptedAccessCodeHashes.includes(localStorage.getItem(accessStorageKey) || '')
   ));
-  const [mode, setMode] = useState<AppMode>('self');
   const [targetName, setTargetName] = useState('');
-  const [relationship, setRelationship] = useState(relationshipOptions[0]);
   const [birthYear, setBirthYear] = useState('2000');
   const [birthMonth, setBirthMonth] = useState('1');
   const [birthDay, setBirthDay] = useState('1');
@@ -1215,18 +1800,19 @@ function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('profile');
   const [result, setResult] = useState<DiagnosisResult | null>(null);
 
-  const targetLabel = getPrimaryLabel(mode, targetName);
+  const targetLabel = targetName.trim() || 'あなた';
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: currentYear - 1900 + 1 }, (_, index) => String(currentYear - index));
   const monthOptions = Array.from({ length: 12 }, (_, index) => String(index + 1));
   const dayOptions = Array.from({ length: getDaysInMonth(birthYear, birthMonth) }, (_, index) => String(index + 1));
   const birthDateLabel = `${birthYear}/${birthMonth.padStart(2, '0')}/${birthDay.padStart(2, '0')}`;
   const insightCards = useMemo(
-    () => result ? buildInsightCards(result, mode, targetName, relationship) : [],
-    [mode, relationship, result, targetName],
+    () => result ? buildInsightCards(result, targetLabel) : [],
+    [result, targetLabel],
   );
   const workGuide = result ? getWorkCareerGuide(result.jobStyle.primaryStar) : null;
   const workEnergyGuide = result ? getWorkEnergyGuide(result.energy.star) : null;
+  const currentEnergyGuide = result ? getEnergyStarCorrespondence(result.energy.star) : null;
 
   if (shouldRequireAccessCode && acceptedAccessCodeHashes.length === 0) {
     return <AccessSetupRequired />;
@@ -1251,69 +1837,34 @@ function App() {
   return (
     <div className={`app-container ${result ? getThemeClass(result.personality.element) : ''}`}>
       <header className="app-header">
-        <div className="app-kicker">DESTINY AND RELATIONSHIP INSIGHT</div>
+        <div className="app-kicker">PERSONAL MEISHIKI PROFILE</div>
         <h1 className="app-title">MEISHIKI Compass</h1>
         <p className="app-subtitle">
-          命式から、自分の扱い方と相手との関わり方を読み解くプロファイルツール
+          命式から、その人の持ち味、力の出し方、仕事で活きる役割を読み解くプロファイルツール
         </p>
       </header>
 
       <main>
         {!result ? (
           <form onSubmit={handleDiagnose} className="tool-shell">
-            <section className="mode-grid" aria-label="診断の目的">
-              <button
-                type="button"
-                className={`mode-card ${mode === 'self' ? 'active' : ''}`}
-                onClick={() => setMode('self')}
-              >
-                <span>01</span>
-                <strong>自分を知る</strong>
-                <small>強み、注意点、仕事での活かし方を整理する</small>
-              </button>
-              <button
-                type="button"
-                className={`mode-card ${mode === 'other' ? 'active' : ''}`}
-                onClick={() => setMode('other')}
-              >
-                <span>02</span>
-                <strong>相手を知る</strong>
-                <small>関わり方、距離感、チームでの役割を読む</small>
-              </button>
-            </section>
-
             <section className="form-panel">
               <div className="panel-heading">
                 <span className="eyebrow">INPUT</span>
-                <h2>{mode === 'self' ? 'あなたの情報を入力' : '知りたい相手の情報を入力'}</h2>
+                <h2>自分を知る</h2>
               </div>
 
-              {mode === 'other' && (
-                <div className="form-row">
-                  <label className="form-group">
-                    <span className="form-label">相手の呼び名</span>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="例：田中さん"
-                      value={targetName}
-                      onChange={(e) => setTargetName(e.target.value)}
-                    />
-                  </label>
-                  <label className="form-group">
-                    <span className="form-label">関係性</span>
-                    <select
-                      className="form-input"
-                      value={relationship}
-                      onChange={(e) => setRelationship(e.target.value)}
-                    >
-                      {relationshipOptions.map((option) => (
-                        <option key={option} value={option}>{option}</option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-              )}
+              <div className="form-row">
+                <label className="form-group">
+                  <span className="form-label">名前</span>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="例：田中さん / たかさん"
+                    value={targetName}
+                    onChange={(e) => setTargetName(e.target.value)}
+                  />
+                </label>
+              </div>
 
               <div className="form-row">
                 <fieldset className="form-group date-select-group">
@@ -1392,7 +1943,7 @@ function App() {
               </div>
 
               <button type="submit" className="btn-primary">
-                {mode === 'self' ? '自分のプロファイルを見る' : `${targetLabel}の関わり方を見る`}
+                {targetLabel}のプロファイルを見る
               </button>
             </section>
           </form>
@@ -1400,7 +1951,7 @@ function App() {
           <div className="result-layout">
             <section className="summary-panel">
               <div className="summary-copy">
-                <span className="eyebrow">{mode === 'self' ? 'YOUR PROFILE' : 'PERSON PROFILE'}</span>
+                <span className="eyebrow">YOUR PROFILE</span>
                 <h2>
                   {targetLabel}は「{result.personality.alias}」タイプ
                   <span>（{result.personality.element}・{result.personality.yinYang}）</span>
@@ -1412,7 +1963,6 @@ function App() {
                   <span>{result.personality.instinct}</span>
                   <span>大運：{result.majorLuck.directionLabel}</span>
                   {birthHour !== '' && <span>{birthHour}:00頃</span>}
-                  {mode === 'other' && <span>{relationship}</span>}
                 </div>
               </div>
               <div className="summary-visual">
@@ -1436,13 +1986,17 @@ function App() {
               <button type="button" className="btn-secondary" onClick={handleReset}>入力に戻る</button>
             </section>
 
+            <FoundationNotesPanel result={result} hasHour={birthHour !== ''} targetLabel={targetLabel} />
+
             <NatalChartTable result={result} />
 
             <LifeChartPanel result={result} targetLabel={targetLabel} />
 
-            <ActionAreaPanel result={result} />
+            <CenterStarPracticalPanel result={result} targetLabel={targetLabel} />
 
-            <TalentEnergyPanel result={result} />
+            <ActionAreaPanel result={result} targetLabel={targetLabel} />
+
+            <TalentEnergyPanel result={result} targetLabel={targetLabel} />
 
             <section className="insight-grid" aria-label="実用インサイト">
               {insightCards.map((card) => (
@@ -1584,7 +2138,11 @@ function App() {
                     <article>
                       <span className="eyebrow">WORK ENERGY</span>
                       <h3>仕事でのエネルギーの使い方</h3>
-                      <p className="small-note">十二大従星：{result.energy.star}星 / 行動エネルギー：{result.energy.level}</p>
+                      {currentEnergyGuide && (
+                        <p className="small-note">
+                          十二大従星：{currentEnergyGuide.sanmeiName} / 十二運：{currentEnergyGuide.fortuneName} / エネルギー値：{currentEnergyGuide.energyValue}
+                        </p>
+                      )}
                       <dl className="work-energy-list">
                         <div>
                           <dt>働くペース</dt>

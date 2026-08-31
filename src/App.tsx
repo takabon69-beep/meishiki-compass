@@ -1451,6 +1451,78 @@ function TalentEnergyPanel({ result, targetLabel }: { result: DiagnosisResult; t
   );
 }
 
+type WaveLineChartPoint = {
+  key: string | number;
+  primaryLabel: string;
+  branch: string;
+  season: string;
+  energy: number;
+  detail: string;
+  status?: string;
+  isCurrent?: boolean;
+  isPast?: boolean;
+  isTenchusatsu: boolean;
+  isCaution: boolean;
+};
+
+function WaveLineChart({ points, ariaLabel }: { points: WaveLineChartPoint[]; ariaLabel: string }) {
+  const plotLeft = 5;
+  const plotRight = 96;
+  const plotTop = 10;
+  const plotBottom = 68;
+  const pointPositions = points.map((point, index) => {
+    const x = points.length === 1
+      ? 50
+      : plotLeft + (index / (points.length - 1)) * (plotRight - plotLeft);
+    const energy = Math.min(12, Math.max(0, point.energy));
+    const y = plotBottom - (energy / 12) * (plotBottom - plotTop);
+    return { point, x, y };
+  });
+  const linePoints = pointPositions.map(({ x, y }) => `${x},${y}`).join(' ');
+
+  return (
+    <div className="wave-line-chart">
+      <svg viewBox="0 0 100 78" preserveAspectRatio="none" role="img" aria-label={ariaLabel}>
+        {[0, 4, 8, 12].map((energy) => {
+          const y = plotBottom - (energy / 12) * (plotBottom - plotTop);
+          return (
+            <g key={energy}>
+              <line className="wave-line-grid" x1="3" x2="98" y1={y} y2={y} />
+            </g>
+          );
+        })}
+        {pointPositions.filter(({ point }) => point.isCurrent).map(({ point, x }) => (
+          <line key={point.key} className="wave-line-current-guide" x1={x} x2={x} y1={plotTop - 2} y2={plotBottom + 2} />
+        ))}
+        <polyline className="wave-line-path" points={linePoints} />
+        {pointPositions.map(({ point, x, y }) => (
+          <g key={point.key} className={`wave-line-node${point.isCurrent ? ' current' : ''}${point.isPast ? ' past' : ''}${point.isTenchusatsu ? ' tenchusatsu' : ''}${point.isCaution ? ' caution' : ''}`}>
+            <title>{point.detail}</title>
+            {(point.isTenchusatsu || point.isCaution) && (
+              <circle className="wave-line-halo" cx={x} cy={y} r="4.4" />
+            )}
+            <circle className="wave-line-point" cx={x} cy={y} r={point.isCurrent ? '3.15' : '2.45'} />
+          </g>
+        ))}
+      </svg>
+      <div
+        className="wave-line-labels"
+        style={{ gridTemplateColumns: `repeat(${points.length}, minmax(0, 1fr))` }}
+      >
+        {points.map((point) => (
+          <div key={point.key} className={`wave-line-label${point.isCurrent ? ' current' : ''}${point.isPast ? ' past' : ''}`}>
+            <strong aria-label={`エネルギー ${point.energy} / 12`}>{point.energy}</strong>
+            <small>{point.branch}</small>
+            <em>{point.season}</em>
+            {point.status && <b>{point.status}</b>}
+            <span>{point.primaryLabel}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function RhythmPanel({ result }: { result: DiagnosisResult }) {
   const displayCurrentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
@@ -1697,7 +1769,7 @@ function RhythmPanel({ result }: { result: DiagnosisResult }) {
         </p>
       </section>
 
-      <section className="wave-section" aria-label="年運の波動">
+      <section className="wave-section year-wave" aria-label="年運の波動">
         <div className="wave-heading">
           <div>
             <span className="eyebrow">12 YEARS</span>
@@ -1705,30 +1777,29 @@ function RhythmPanel({ result }: { result: DiagnosisResult }) {
           </div>
           <p>過去2年と、今年を含む今後10年を並べています。前の流れが次の判断にどうつながるかを見るための年表です。</p>
         </div>
-        <div className="graph-container wave-graph">
-          {result.rhythm.map((node) => {
+        <WaveLineChart
+          ariaLabel="年運のエネルギー推移"
+          points={result.rhythm.map((node) => {
             const yearPosition = node.year < displayCurrentYear
               ? 'past'
               : node.year === displayCurrentYear ? 'current' : 'future';
             return (
-              <div key={node.year} className={`graph-column ${yearPosition === 'current' ? 'current-year' : yearPosition === 'past' ? 'past-year' : ''}`}>
-                <div className="graph-bar-wrapper">
-                  <div
-                    className={`graph-bar ${node.isTenchusatsu ? 'tenchusatsu' : node.waveEnergy <= 2 ? 'caution' : ''}`}
-                    style={{ height: `${Math.max((node.waveEnergy / 12) * 100, 6)}%` }}
-                    title={`${node.year}年 ${node.stem}${node.branch}: ${node.waveLabel} ${node.waveEnergy}/12`}
-                  >
-                    <span>{node.waveEnergy}</span>
-                  </div>
-                </div>
-                <small>{node.branch}</small>
-                <em>{node.season}{node.seasonYear}</em>
-                <b>{yearPosition === 'past' ? '過去' : yearPosition === 'current' ? '今年' : '今後'}</b>
-                <span>{node.year}</span>
-              </div>
+              {
+                key: node.year,
+                primaryLabel: `${node.year}`,
+                branch: node.branch,
+                season: `${node.season}${node.seasonYear}`,
+                energy: node.waveEnergy,
+                detail: `${node.year}年 ${node.stem}${node.branch}: ${node.waveLabel} ${node.waveEnergy}/12`,
+                status: yearPosition === 'past' ? '過去' : yearPosition === 'current' ? '今年' : '今後',
+                isCurrent: yearPosition === 'current',
+                isPast: yearPosition === 'past',
+                isTenchusatsu: node.isTenchusatsu,
+                isCaution: node.waveEnergy <= 2,
+              }
             );
           })}
-        </div>
+        />
       </section>
 
       <section className="wave-section" aria-label="月運の波動">
@@ -1739,24 +1810,20 @@ function RhythmPanel({ result }: { result: DiagnosisResult }) {
           </div>
           <p>毎年くる月の流れです。1月は丑、12月は子として見ます。</p>
         </div>
-        <div className="graph-container wave-graph month-wave">
-          {result.monthlyRhythm.map((node) => (
-            <div key={node.month} className="graph-column">
-              <div className="graph-bar-wrapper">
-                <div
-                  className={`graph-bar ${node.isTenchusatsu ? 'tenchusatsu' : node.energy <= 2 ? 'caution' : ''}`}
-                  style={{ height: `${Math.max((node.energy / 12) * 100, 6)}%` }}
-                  title={`${node.month}月 ${node.branch}: ${node.label} ${node.energy}/12`}
-                >
-                  <span>{node.energy}</span>
-                </div>
-              </div>
-              <small>{node.branch}</small>
-              <em>{node.season}{node.seasonYear}</em>
-              <span>{node.month}月</span>
-            </div>
-          ))}
-        </div>
+        <WaveLineChart
+          ariaLabel="月運のエネルギー推移"
+          points={result.monthlyRhythm.map((node) => ({
+            key: node.month,
+            primaryLabel: `${node.month}月`,
+            branch: node.branch,
+            season: `${node.season}${node.seasonYear}`,
+            energy: node.energy,
+            detail: `${node.month}月 ${node.branch}: ${node.label} ${node.energy}/12`,
+            isCurrent: node.month === currentMonth,
+            isTenchusatsu: node.isTenchusatsu,
+            isCaution: node.energy <= 2,
+          }))}
+        />
       </section>
 
       <div className="timeline-container">
@@ -1832,6 +1899,10 @@ function App() {
 
   const handleReset = () => {
     setResult(null);
+  };
+
+  const handlePrint = () => {
+    window.print();
   };
 
   return (
@@ -1949,13 +2020,33 @@ function App() {
           </form>
         ) : (
           <div className="result-layout">
+            <div className="print-report-title">
+              <span>MEISHIKI Compass</span>
+              <h1>{targetLabel}の命式プロファイル</h1>
+              <p>{birthDateLabel} 生まれ</p>
+            </div>
+
             <section className="summary-panel">
               <div className="summary-copy">
                 <span className="eyebrow">YOUR PROFILE</span>
-                <h2>
-                  {targetLabel}は「{result.personality.alias}」タイプ
-                  <span>（{result.personality.element}・{result.personality.yinYang}）</span>
-                </h2>
+                <div className="summary-title-row">
+                  <h2>
+                    {targetLabel}は「{result.personality.alias}」タイプ
+                    <span>（{result.personality.element}・{result.personality.yinYang}）</span>
+                  </h2>
+                  <button
+                    type="button"
+                    className="print-button screen-only"
+                    onClick={handlePrint}
+                    title="このプロファイルを印刷する"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z" />
+                      <path d="M18 12h.01" />
+                    </svg>
+                    <span>印刷</span>
+                  </button>
+                </div>
                 <p>{result.personality.description}</p>
                 <div className="summary-meta">
                   <span>{birthDateLabel} 生まれ</span>
@@ -1983,7 +2074,7 @@ function App() {
               {result.pillars.hour && (
                 <PillarBox label="時柱" stem={result.pillars.hour.stem} branch={result.pillars.hour.branch} />
               )}
-              <button type="button" className="btn-secondary" onClick={handleReset}>入力に戻る</button>
+              <button type="button" className="btn-secondary screen-only" onClick={handleReset}>入力に戻る</button>
             </section>
 
             <FoundationNotesPanel result={result} hasHour={birthHour !== ''} targetLabel={targetLabel} />
@@ -2023,7 +2114,8 @@ function App() {
             </nav>
 
             <section className="detail-panel">
-              {activeTab === 'profile' && (
+              <div className={`tab-content ${activeTab === 'profile' ? 'active' : ''}`}>
+                <h2 className="print-section-title">本質気質</h2>
                 <div className="detail-grid">
                   <article>
                     <span className="eyebrow">CORE</span>
@@ -2060,30 +2152,11 @@ function App() {
                     </div>
                     <p>{result.personality.essence}</p>
                   </article>
-                  <article className="wide-card">
-                    <span className="eyebrow">ELEMENT BALANCE</span>
-                    <h3>五行バランス（偏差値）</h3>
-                    <p className="balance-note">
-                      命式の天干・地支・採用蔵干からraw dataを出し、50を平均として偏差値化しています。
-                    </p>
-                    <div className="balance-list">
-                      {Object.entries(result.elementBalance).map(([element, score]) => (
-                        <div key={element} className="balance-row">
-                          <span>{element}</span>
-                          <div className="balance-track">
-                            <div style={{ width: `${Math.min(100, Math.max(0, (score / 80) * 100))}%` }} />
-                          </div>
-                          <b>{score.toFixed(2)}</b>
-                          <small>raw {result.elementBalanceRaw[element]}</small>
-                        </div>
-                      ))}
-                    </div>
-                    <p className="balance-diff">差分合計：{result.elementBalanceDifferenceTotal.toFixed(2)}</p>
-                  </article>
                 </div>
-              )}
+              </div>
 
-              {activeTab === 'work' && (
+              <div className={`tab-content ${activeTab === 'work' ? 'active' : ''}`}>
+                <h2 className="print-section-title">仕事と役割</h2>
                 <div className="detail-grid">
                   <article className="wide-card">
                     <span className="eyebrow">WORK STYLE</span>
@@ -2160,9 +2233,10 @@ function App() {
                     </article>
                   )}
                 </div>
-              )}
+              </div>
 
-              {activeTab === 'relation' && (
+              <div className={`tab-content ${activeTab === 'relation' ? 'active' : ''}`}>
+                <h2 className="print-section-title">関係性</h2>
                 <div className="detail-grid relation-grid">
                   <article className="wide-card">
                     <span className="eyebrow">COMMUNICATION</span>
@@ -2190,11 +2264,12 @@ function App() {
                     <p>{result.communication.ngPoints}</p>
                   </article>
                 </div>
-              )}
+              </div>
 
-              {activeTab === 'rhythm' && (
+              <div className={`tab-content ${activeTab === 'rhythm' ? 'active' : ''}`}>
+                <h2 className="print-section-title">リズム</h2>
                 <RhythmPanel result={result} />
-              )}
+              </div>
             </section>
           </div>
         )}

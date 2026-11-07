@@ -82,7 +82,8 @@ main {
 .access-panel h1 {
   margin: 0;
   font-size: clamp(2rem, 8vw, 3.2rem);
-  line-height: 1;
+  line-height: 1.2;
+  text-wrap: balance;
   letter-spacing: 0;
 }
 
@@ -125,7 +126,8 @@ main {
 .app-title {
   margin: 8px 0;
   font-size: clamp(2rem, 5vw, 4.4rem);
-  line-height: 1;
+  line-height: 1.2;
+  text-wrap: balance;
   letter-spacing: 0;
 }
 
@@ -994,7 +996,6 @@ main {
 
 .action-map svg {
   width: min(100%, 360px);
-  aspect-ratio: 1;
   overflow: visible;
 }
 
@@ -1025,13 +1026,17 @@ main {
 
 .action-map .axis {
   fill: #6e6e6e;
-  font-size: 4.2px;
+  font-size: 3.5px;
+  font-weight: 700;
+}
+
+.action-map .action-label-line {
+  stroke-width: 0.45;
 }
 
 .action-map .dot-label {
   fill: #202020;
-  font-size: 3.5px;
-  stroke-width: 0.9px;
+  font-size: 4.2px;
 }
 
 .action-dot {
@@ -1685,115 +1690,6 @@ main {
   font-weight: 800;
 }
 
-.season-cycle-panel {
-  grid-column: 1 / -1;
-  padding: 18px;
-  display: grid;
-  grid-template-columns: minmax(280px, 0.8fr) minmax(520px, 1.2fr);
-  gap: 14px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background:
-    linear-gradient(135deg, var(--theme-soft), rgba(255, 255, 255, 0.035)),
-    var(--panel);
-}
-
-.season-cycle-current {
-  display: grid;
-  gap: 14px;
-}
-
-.season-cycle-current h3 {
-  margin: 0;
-}
-
-.season-cycle-lead {
-  margin: 0;
-  color: var(--muted);
-  line-height: 1.75;
-}
-
-.season-current-grid,
-.season-card-grid {
-  display: grid;
-  gap: 10px;
-}
-
-.season-current-grid {
-  grid-template-columns: 1fr;
-}
-
-.season-current-grid article,
-.season-card-grid article {
-  padding: 14px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.18);
-}
-
-.season-current-grid span,
-.season-card-title span,
-.season-card-grid dt {
-  color: var(--dim);
-  font-size: 0.78rem;
-  font-weight: 800;
-}
-
-.season-current-grid strong,
-.season-card-title strong {
-  display: block;
-  color: var(--theme-color);
-  font-size: 1.12rem;
-}
-
-.season-current-grid p,
-.season-card-grid dd {
-  margin: 0;
-  color: var(--muted);
-  line-height: 1.7;
-}
-
-.season-card-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.season-card-grid article {
-  display: grid;
-  align-content: start;
-  gap: 12px;
-}
-
-.season-card-title {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.season-card-grid dl,
-.season-card-grid dl div {
-  margin: 0;
-  display: grid;
-  gap: 5px;
-}
-
-.season-card-grid dl {
-  gap: 10px;
-}
-
-.season-card-grid dt {
-  color: var(--theme-color);
-}
-
-.season-card-grid dd {
-  font-size: 0.88rem;
-}
-
-.season-card-grid article.active {
-  border-color: color-mix(in srgb, var(--theme-color) 58%, transparent);
-  background: var(--theme-soft);
-}
-
 .major-luck-panel {
   grid-column: 1 / -1;
   padding: 18px;
@@ -1987,7 +1883,6 @@ main {
 .foundation-panel,
 .life-chart-panel,
 .center-star-panel,
-.season-cycle-panel,
 .major-luck-panel,
 .work-advice-card,
 .stem-meaning-card {
@@ -2018,8 +1913,6 @@ main {
 .tenchusatsu-layer-grid article,
 .tenchusatsu-usage-grid article,
 .tenchusatsu-chip-list span,
-.season-current-grid article,
-.season-card-grid article,
 .major-luck-stats article,
 .major-luck-star-note,
 .major-luck-table-wrap {
@@ -2064,13 +1957,8 @@ main {
   .center-star-panel,
   .action-area-panel,
   .talent-energy-panel,
-  .season-cycle-panel,
   .detail-grid,
   .rhythm-view {
-    grid-template-columns: 1fr;
-  }
-
-  .season-current-grid {
     grid-template-columns: 1fr;
   }
 
@@ -2200,10 +2088,6 @@ main {
   }
 
   .talent-ranking {
-    grid-template-columns: 1fr;
-  }
-
-  .season-card-grid {
     grid-template-columns: 1fr;
   }
 
@@ -2371,8 +2255,6 @@ main {
   .small-note,
   .tenchusatsu-layer-grid article,
   .tenchusatsu-usage-grid article,
-  .season-current-grid article,
-  .season-card-grid article,
   .major-luck-stats article,
   .major-luck-current,
   .major-luck-star-note,
@@ -2448,8 +2330,6 @@ main {
   .foundation-guide-grid,
   .pillar-meaning-grid,
   .talent-ranking,
-  .season-card-grid,
-  .season-current-grid,
   .tenchusatsu-layer-grid,
   .tenchusatsu-usage-grid {
     gap: 8px;

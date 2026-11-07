@@ -4,6 +4,7 @@ import { diagnoseUser, type DiagnosisResult } from './utils/astrology';
 type ActiveTab = 'profile' | 'work' | 'relation' | 'rhythm';
 type Gender = 'male' | 'female';
 
+const appTitle = '命式コンパス（算命学ベース）';
 const defaultAccessCodeHash = 'ee800c299ae06ace262346e7516ae7b9b7ce90715b923823d16af5c4afa566b9';
 const configuredAccessCodeHash = import.meta.env.VITE_ACCESS_CODE_HASH || '';
 const acceptedAccessCodeHashes = Array.from(new Set([
@@ -78,7 +79,7 @@ function AccessGate({ onUnlock }: { onUnlock: () => void }) {
       <main className="access-shell">
         <section className="access-panel">
           <span className="eyebrow">PRIVATE PREVIEW</span>
-          <h1>MEISHIKI Compass</h1>
+          <h1>{appTitle}</h1>
           <p>
             このページは、パスコードを知っている方だけに公開しています。
             共有された合言葉を入力してください。
@@ -1028,6 +1029,24 @@ function ActionAreaPanel({ result, targetLabel }: { result: DiagnosisResult; tar
   const { actionArea } = result;
   const polygonPoints = actionArea.points.map((point) => `${point.x},${point.y}`).join(' ');
   const dominantLabel = actionArea.dominantAreas.join(' / ');
+  const pointsByNumber = new Map(actionArea.points.map((point) => [point.number, point]));
+  const pointLabels = [...pointsByNumber.values()]
+    .map((point) => ({
+      point,
+      x: 50 + (point.x - 50) * (52 / 42),
+      y: 50 + (point.y - 50) * (48 / 42),
+    }))
+    .sort((a, b) => Math.abs(a.y - 50) - Math.abs(b.y - 50));
+
+  // Space nearby labels outward while keeping the plotted points fixed.
+  pointLabels.forEach((label, index) => {
+    for (const previous of pointLabels.slice(0, index)) {
+      if (Math.abs(label.x - previous.x) >= 14) continue;
+      label.y = label.point.y < 50
+        ? Math.min(label.y, previous.y - 5.5)
+        : Math.max(label.y, previous.y + 5.5);
+    }
+  });
 
   return (
     <section className="action-area-panel" aria-label="行動エリア">
@@ -1046,23 +1065,35 @@ function ActionAreaPanel({ result, targetLabel }: { result: DiagnosisResult; tar
       </div>
 
       <div className="action-map">
-        <svg viewBox="0 0 100 100" role="img" aria-label="行動エリア三角形">
+        <svg
+          viewBox="-10 -12 120 124"
+          role="img"
+          aria-label={`行動エリア三角形：${actionArea.points.map((point) => `${point.label} No.${point.number}`).join('、')}`}
+        >
           <circle cx="50" cy="50" r="42" />
           <line x1="50" y1="8" x2="50" y2="92" />
           <line x1="8" y1="50" x2="92" y2="50" />
+          <polygon points={polygonPoints} />
           <text x="66" y="29">A</text>
           <text x="66" y="75">B</text>
           <text x="28" y="29">C</text>
           <text x="28" y="75">D</text>
-          <text x="50" y="5" className="axis">No.1</text>
-          <text x="94" y="52" className="axis">No.16</text>
-          <text x="50" y="98" className="axis">No.31</text>
-          <text x="6" y="52" className="axis">No.46</text>
-          <polygon points={polygonPoints} />
-          {actionArea.points.map((point) => (
-            <g key={point.pillar}>
+          {[
+            { number: 1, x: 50, y: 13 },
+            { number: 16, x: 82, y: 46 },
+            { number: 31, x: 50, y: 87 },
+            { number: 46, x: 18, y: 46 },
+          ].filter(({ number }) => !pointsByNumber.has(number)).map(({ number, x, y }) => (
+            <text key={number} x={x} y={y} className="axis">No.{number}</text>
+          ))}
+          {pointLabels.map(({ point, x, y }) => (
+            <line key={point.number} className="action-label-line" x1={point.x} y1={point.y} x2={x} y2={y} />
+          ))}
+          {pointLabels.map(({ point, x, y }) => (
+            <g key={point.number}>
+              <title>{`No.${point.number} ${point.stem}${point.branch}`}</title>
               <circle className="action-dot" cx={point.x} cy={point.y} r="2.2" />
-              <text className="dot-label" x={point.x} y={point.y - 4}>{point.label}</text>
+              <text className="dot-label" x={x} y={y}>No.{point.number}</text>
             </g>
           ))}
         </svg>
@@ -1606,72 +1637,19 @@ function RhythmPanel({ result }: { result: DiagnosisResult }) {
         <span className="eyebrow">YEAR WAVE</span>
         <h3>{currentYearNode.year}年の年運</h3>
         <strong>{currentYearNode.waveLabel}・{currentYearNode.waveEnergy}/12</strong>
-        <p>{currentYearNode.seasonPhase}。{currentYearNode.theme}</p>
+        <p><b>{currentYearNode.seasonPhase}・{currentYearNode.seasonTheme}</b></p>
+        <p>{currentYearNode.seasonAction}</p>
+        <p>{currentYearNode.theme}</p>
       </article>
 
       <article className="rhythm-summary-card">
         <span className="eyebrow">MONTH WAVE</span>
         <h3>{currentMonthNode.month}月の月運</h3>
         <strong>{currentMonthNode.label}・{currentMonthNode.energy}/12</strong>
-        <p>{currentMonthNode.seasonPhase}。{currentMonthNode.theme}</p>
+        <p><b>{currentMonthNode.seasonPhase}・{currentMonthNode.seasonTheme}</b></p>
+        <p>{currentMonthNode.seasonAction}</p>
+        <p>{currentMonthNode.theme}</p>
       </article>
-
-      <section className="season-cycle-panel" aria-label="春夏秋冬サイクル">
-        <div className="season-cycle-current">
-          <span className="eyebrow">SEASON MAJOR LUCK</span>
-          <h3>四季運の現在地</h3>
-          <p className="season-cycle-lead">
-            四季運は、月支から始まる人生120年の大きな季節です。
-            大運と同じ{result.seasonCycle.directionLabel}で巡り、春・夏・秋・冬を30年ずつ見ます。
-            年運や月運よりも大きい、人生全体の戦略フェーズとして読みます。
-          </p>
-          <div className="season-current-grid">
-            <article>
-              <span>開始の季節</span>
-              <strong>{result.seasonCycle.birth.label}</strong>
-              <p>
-                月支「{result.seasonCycle.startBranch}」は{result.seasonCycle.birth.branchGroup}のグループ。
-                {result.seasonCycle.birth.instinct}から始まります。
-              </p>
-            </article>
-            <article>
-              <span>現在の季節</span>
-              <strong>{result.seasonCycle.current.label}</strong>
-              <p>
-                {result.seasonCycle.current.instinct}の時期です。
-                {result.seasonCycle.current.description}
-              </p>
-            </article>
-          </div>
-        </div>
-        <div className="season-card-grid">
-          {result.seasonCycle.phases.map((card) => (
-            <article
-              key={`${card.season}-${card.ageFrom}`}
-              className={card.isCurrent ? 'active' : ''}
-            >
-              <div className="season-card-title">
-                <strong>{card.season}</strong>
-                <span>{card.ageFrom}〜{card.ageTo}歳</span>
-              </div>
-              <dl>
-                <div>
-                  <dt>本能</dt>
-                  <dd>{card.instinct}</dd>
-                </div>
-                <div>
-                  <dt>使い方</dt>
-                  <dd>{card.description}</dd>
-                </div>
-              </dl>
-            </article>
-          ))}
-        </div>
-        <p className="major-luck-note">
-          四季運は算命学独自の上位レイヤーです。大運の10年単位の読みと重ねて、
-          今の30年でどの本能を使いやすいかを見ます。
-        </p>
-      </section>
 
       <section className="major-luck-panel" aria-label="大運">
         <div className="major-luck-heading">
@@ -1844,8 +1822,9 @@ function RhythmPanel({ result }: { result: DiagnosisResult }) {
           return (
           <article key={node.year} className={node.isTenchusatsu ? 'timeline-node alert' : node.year === displayCurrentYear ? 'timeline-node current' : 'timeline-node'}>
             <b>{node.year}年 {yearPosition}・{node.waveLabel}</b>
-            <span>{node.stem}{node.branch}・{node.waveEnergy}/12・{node.seasonPhase}</span>
-            <p>{node.seasonAction} {node.description}</p>
+            <span>{node.stem}{node.branch}・{node.waveEnergy}/12・{node.seasonPhase}・{node.seasonTheme}</span>
+            <p>{node.seasonAction}</p>
+            <p>{node.description}</p>
           </article>
           );
         })}
@@ -1909,7 +1888,7 @@ function App() {
     <div className={`app-container ${result ? getThemeClass(result.personality.element) : ''}`}>
       <header className="app-header">
         <div className="app-kicker">PERSONAL MEISHIKI PROFILE</div>
-        <h1 className="app-title">MEISHIKI Compass</h1>
+        <h1 className="app-title">{appTitle}</h1>
         <p className="app-subtitle">
           命式から、その人の持ち味、力の出し方、仕事で活きる役割を読み解くプロファイルツール
         </p>
@@ -2021,7 +2000,7 @@ function App() {
         ) : (
           <div className="result-layout">
             <div className="print-report-title">
-              <span>MEISHIKI Compass</span>
+              <span>{appTitle}</span>
               <h1>{targetLabel}の命式プロファイル</h1>
               <p>{birthDateLabel} 生まれ</p>
             </div>

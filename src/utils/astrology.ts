@@ -131,6 +131,7 @@ export interface DiagnosisResult {
     season: '春' | '夏' | '秋' | '冬'; // 人生の季節
     seasonYear: 1 | 2 | 3;
     seasonPhase: string;  // 季節内のフェーズ（例：「新芽期」）
+    seasonTheme: string;
     seasonAction: string; // その季節に適した行動指针
   }>;
   monthlyRhythm: Array<{
@@ -144,6 +145,7 @@ export interface DiagnosisResult {
     season: '春' | '夏' | '秋' | '冬';
     seasonYear: 1 | 2 | 3;
     seasonPhase: string;
+    seasonTheme: string;
     seasonAction: string;
     solarTermName: string;
     solarTermDay: number;
@@ -893,6 +895,7 @@ type LifeSeasonDetail = {
   archetype: string;
   theme: string;
   description: string;
+  monthlyDescription?: string;
 };
 
 type SeasonCyclePhase = {
@@ -948,23 +951,23 @@ const LIFE_SEASON_DETAILS: LifeSeasonDetail[] = [
     label: '春1年目',
     archetype: '世話人',
     theme: 'ケアと拡大開始',
-    description: '冬に根づいた活動や関係を外へ伸ばし、自分の力を磨いて育てる時期です。'
+    description: '冬にまいた種のうち、芽が出たものと芽が出なかったものを見極めましょう。芽が出た活動や関係には手をかけ、成長を見守りながら少しずつ広げる時期です。'
   },
   {
     season: '春',
     seasonYear: 2,
     label: '春2年目',
     archetype: '探求者',
-    theme: '自己探求と仕掛け',
-    description: '広がり始めた道を検証し、自分はどう進みたいのかを問い直す時期です。'
+    theme: '積極的な仕掛けと自己探求',
+    description: '自分から働きかけ、活動や人間関係、自分が受け止められる範囲を広げる時期です。新しいものを生み出す難しさにも向き合いながら、「どうありたいか」「どう進みたいか」を掘り下げましょう。'
   },
   {
     season: '春',
     seasonYear: 3,
     label: '春3年目',
     archetype: '破壊者',
-    theme: '脱皮と夏への準備',
-    description: '次の成長に合わなくなったものを見直し、手放すものを選ぶ時期です。'
+    theme: '夏への加速と脱皮',
+    description: '次の段階へ進むために、今の自分に合わなくなったやり方やこだわりを手放す時期です。空いた余地を使って、新しいものをつくり始めましょう。'
   },
   {
     season: '夏',
@@ -972,23 +975,23 @@ const LIFE_SEASON_DETAILS: LifeSeasonDetail[] = [
     label: '夏1年目',
     archetype: '恋人',
     theme: '満喫とチャレンジ',
-    description: '勢いを味方につけ、好きなことや広げたいことへ大きく踏み出す時期です。'
+    description: '恋人同士が一緒の時間を楽しむように、今の勢いを存分に楽しむ時期です。楽しみながらも気を緩めず、やってみたかったことへもう一歩、大きく踏み出しましょう。'
   },
   {
     season: '夏',
     seasonYear: 2,
     label: '夏2年目',
     archetype: '創造者',
-    theme: '創造と拡大',
-    description: 'エネルギーが強まり、現実を形にしながら活動範囲を広げる時期です。'
+    theme: '創造と効率',
+    description: '良くも悪くもエネルギーが最大になる時期です。まだ勢いに乗れていないなら、もうひと踏ん張りしてペースを上げましょう。すでに波に乗っているなら、少しペースを落とし、続けられる仕組みや体制を整えましょう。'
   },
   {
     season: '夏',
     seasonYear: 3,
     label: '夏3年目',
     archetype: '統治者',
-    theme: '責任と秋への準備',
-    description: 'これまで作ってきた状況を把握し、次の秋に向けて整える時期です。'
+    theme: '状況の把握と秋の準備',
+    description: '冬から積み上げてきた実績と、今の状況や環境、人間関係を見渡す時期です。秋に向けて、次に進むために必要なことを確認しましょう。'
   },
   {
     season: '秋',
@@ -996,23 +999,24 @@ const LIFE_SEASON_DETAILS: LifeSeasonDetail[] = [
     label: '秋1年目',
     archetype: '魔術師',
     theme: '収穫と新陳代謝',
-    description: '夏までの結果が表れ始めます。変化を観察し、流れに委ねる時期です。'
+    description: '夏までの良い結果も、思いどおりにいかなかった結果も、成長のための収穫です。得たものを受け取り、役目を終えたものは手放しましょう。自然と終わっていくものもあります。'
   },
   {
     season: '秋',
     seasonYear: 2,
     label: '秋2年目',
     archetype: '賢者',
-    theme: '受容と学び',
-    description: '起きたことを受け止め、反省や学びとして自分の中に落とし込む時期です。'
+    theme: '受容と勉強',
+    description: '表れた結果を一つひとつ味わいながら、見えてきた課題を順に解決する時期です。負担にならない範囲で、学びや自分を磨くことに時間やお金を使いましょう。'
   },
   {
     season: '秋',
     seasonYear: 3,
     label: '秋3年目',
     archetype: '愚者',
-    theme: '仕上げと次の準備',
-    description: '良いことも難しいことも収穫として味わい、次のサイクルへ備える時期です。'
+    theme: '仕上げと次のサイクルの準備',
+    description: '12年の締めくくりです。良かったことも難しかったことも、先入観を持たず、ありのままに受け止めて味わいましょう。今の区切りを楽しみながら、次の12年に向けて持ち越すことを整理しましょう。',
+    monthlyDescription: '良かったことも難しかったことも、ありのままに受け止めて味わう月です。取り組んできたことに区切りをつけ、次に持ち越すことを整理しましょう。'
   },
   {
     season: '冬',
@@ -1020,7 +1024,8 @@ const LIFE_SEASON_DETAILS: LifeSeasonDetail[] = [
     label: '冬1年目',
     archetype: '無垢',
     theme: '検証とスタート',
-    description: '前のサイクルを振り返り、新しい方向性を静かに試し始める時期です。'
+    description: '前の12年を振り返り、何が進み、どんな課題が残ったかを確かめましょう。やり残したことを整理し、これからの12年をどんな方向に進めるか考える時期です。',
+    monthlyDescription: 'これまでの取り組みを振り返り、進んだこととやり残したことを整理しましょう。そのうえで、次はどんな方向へ進みたいかを考える月です。'
   },
   {
     season: '冬',
@@ -1028,7 +1033,7 @@ const LIFE_SEASON_DETAILS: LifeSeasonDetail[] = [
     label: '冬2年目',
     archetype: '孤児',
     theme: '再確認と基礎固め',
-    description: '必要なものを見極め、トライアンドエラーで土台を作る時期です。'
+    description: '自分は何を目指したいのか、そのために何が必要なのかを、試行錯誤を重ねながら確かめましょう。うまくいったこともいかなかったことも、次の土台をつくる経験になります。'
   },
   {
     season: '冬',
@@ -1036,7 +1041,7 @@ const LIFE_SEASON_DETAILS: LifeSeasonDetail[] = [
     label: '冬3年目',
     archetype: '戦士',
     theme: '春の準備と課題への取り組み',
-    description: '春の拡大に向けて、避けていた課題や本当の問題に向き合う時期です。'
+    description: '春に活動を広げるために、先送りしてきた課題に取り組みましょう。環境や人間関係など外側の問題と、自分の中にある迷いや課題の両方に向き合う時期です。'
   }
 ];
 
@@ -1748,7 +1753,8 @@ export function diagnoseUser(
       season: monthSeason.detail.season,
       seasonYear: monthSeason.detail.seasonYear,
       seasonPhase: `${monthSeason.detail.label}「${monthSeason.detail.archetype}」`,
-      seasonAction: monthSeason.detail.description,
+      seasonTheme: monthSeason.detail.theme,
+      seasonAction: monthSeason.detail.monthlyDescription ?? monthSeason.detail.description,
       solarTermName: monthSeason.solarTermName,
       solarTermDay: monthSeason.solarTermDay
     };
@@ -1988,6 +1994,7 @@ export function diagnoseUser(
       season,
       seasonYear,
       seasonPhase,
+      seasonTheme: lifeSeason.theme,
       seasonAction
     });
   }
